@@ -10,7 +10,6 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     
-    /* Estilos del modal flotante */
     .modal {
       display: none; 
       position: fixed; 
@@ -27,14 +26,14 @@
 </head>
 <body>
 
-  <!-- Navegación y Botón para abrir el Login -->
+  <!-- Navegación y Botón -->
   <header>
     <h1>Bienvenido a mi sitio web</h1>
     <div id="user-section">
-      <button id="open-auth-btn">Iniciar Sesión / Registrarse</button>
+      <button id="open-auth-btn" onclick="openModal()">Iniciar Sesión / Registrarse</button>
       <div id="user-info" class="hidden">
         <span id="user-email"></span>
-        <button id="logout-btn">Cerrar Sesión</button>
+        <button onclick="logout()">Cerrar Sesión</button>
       </div>
     </div>
   </header>
@@ -57,82 +56,77 @@
 
       <p style="margin-top: 15px; font-size: 0.9em;">
         <span id="toggle-text">¿No tienes cuenta?</span> 
-        <a href="#" id="toggle-link">Regístrate aquí</a>
+        <a href="#" id="toggle-link" onclick="toggleAuthMode(event)">Regístrate aquí</a>
       </p>
       
-      <button id="close-modal-btn" style="margin-top: 10px; width: 100%;">Cancelar</button>
+      <button onclick="closeModal()" style="margin-top: 10px; width: 100%;">Cancelar</button>
     </div>
   </div>
 
   <script>
-    // 1. Inicializar Supabase con tus credenciales correctas
+    // 1. Inicialización ÚNICA de Supabase
     const SUPABASE_URL = "https://jsigzhopcdlreblorjhe.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY"; 
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Solo declaramos supabase una vez
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let isSignUp = false;
 
-    // Elementos del DOM
-    const modal = document.getElementById('auth-modal');
-    const openBtn = document.getElementById('open-auth-btn');
-    const closeBtn = document.getElementById('close-modal-btn');
-    const toggleLink = document.getElementById('toggle-link');
-    const authForm = document.getElementById('auth-form');
-    const logoutBtn = document.getElementById('logout-btn');
+    // 2. Funciones globales para controlar el Modal
+    function openModal() {
+      document.getElementById('auth-modal').style.display = 'flex';
+    }
 
-    // 2. Control del Modal mediante Event Listeners
-    openBtn.addEventListener('click', () => {
-      modal.style.display = 'flex';
-    });
+    function closeModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+    }
 
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-
-    toggleLink.addEventListener('click', (e) => {
+    function toggleAuthMode(e) {
       e.preventDefault();
       isSignUp = !isSignUp;
       document.getElementById('modal-title').innerText = isSignUp ? "Crear Cuenta" : "Iniciar Sesión";
       document.getElementById('submit-btn').innerText = isSignUp ? "Registrarse" : "Entrar";
       document.getElementById('toggle-text').innerText = isSignUp ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
-      toggleLink.innerText = isSignUp ? "Inicia sesión" : "Regístrate aquí";
-    });
+      document.getElementById('toggle-link').innerText = isSignUp ? "Inicia sesión" : "Regístrate aquí";
+    }
 
-    // 3. Registro e Inicio de Sesión
-    authForm.addEventListener('submit', async (e) => {
+    // 3. Formulario e inicio de sesión
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
         if (error) {
           alert("Error: " + error.message);
         } else {
-          alert("Registro procesado. Verifica tu correo si la confirmación está activa.");
-          modal.style.display = 'none';
+          alert("Registro exitoso.");
+          closeModal();
+          checkUser();
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) {
           alert("Error: " + error.message);
         } else {
-          modal.style.display = 'none';
+          closeModal();
           checkUser();
         }
       }
     });
 
     // 4. Cerrar sesión
-    logoutBtn.addEventListener('click', async () => {
-      await supabase.auth.signOut();
+    async function logout() {
+      await supabaseClient.auth.signOut();
       checkUser();
-    });
+    }
 
-    // 5. Verificar estado de sesión
+    // 5. Verificar estado del usuario
     async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const openBtn = document.getElementById('open-auth-btn');
       const userInfo = document.getElementById('user-info');
       const userEmail = document.getElementById('user-email');
 
