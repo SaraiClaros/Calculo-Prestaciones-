@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Sitio Web</title>
+  
+  <!-- Carga del SDK de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    
+    /* Estilos del modal flotante */
+    .modal {
+      display: none; 
+      position: fixed; 
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background: #fff; padding: 20px; border-radius: 8px; width: 300px;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Navegación y Botón para abrir el Login -->
+  <header>
+    <h1>Bienvenido a mi sitio web</h1>
+    <div id="user-section">
+      <button id="open-auth-btn" onclick="openModal()">Iniciar Sesión / Registrarse</button>
+      <div id="user-info" class="hidden">
+        <span id="user-email"></span>
+        <button onclick="logout()">Cerrar Sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <p>Este es el contenido público de tu página web visible para cualquier visitante.</p>
+  </main>
+
+  <!-- Modal de Autenticación -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <h2 id="modal-title">Iniciar Sesión</h2>
+      
+      <form id="auth-form">
+        <input type="email" id="email" placeholder="Correo electrónico" required style="width: 100%; margin-bottom: 10px;">
+        <input type="password" id="password" placeholder="Contraseña" required style="width: 100%; margin-bottom: 10px;">
+        
+        <button type="submit" id="submit-btn" style="width: 100%;">Entrar</button>
+      </form>
+
+      <p style="margin-top: 15px; font-size: 0.9em;">
+        <span id="toggle-text">¿No tienes cuenta?</span> 
+        <a href="#" id="toggle-link" onclick="toggleAuthMode(event)">Regístrate aquí</a>
+      </p>
+      
+      <button onclick="closeModal()" style="margin-top: 10px; width: 100%;">Cancelar</button>
+    </div>
+  </div>
+
+  <script>
+    // 1. Configuración de Supabase (Reemplaza con tus valores reales de la pestaña API)
+    const SUPABASE_URL = "https://jsigzhopcdlreblorjhe.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY"; 
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let isSignUp = false;
+
+    // 2. Control del Modal
+    function openModal() {
+      document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+    }
+
+    function toggleAuthMode(e) {
+      e.preventDefault();
+      isSignUp = !isSignUp;
+      document.getElementById('modal-title').innerText = isSignUp ? "Crear Cuenta" : "Iniciar Sesión";
+      document.getElementById('submit-btn').innerText = isSignUp ? "Registrarse" : "Entrar";
+      document.getElementById('toggle-text').innerText = isSignUp ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
+      document.getElementById('toggle-link').innerText = isSignUp ? "Inicia sesión" : "Regístrate aquí";
+    }
+
+    // 3. Manejo de Registro e Inicio de Sesión
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (isSignUp) {
+        // Registrar usuario
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          alert("Error al registrarse: " + error.message);
+        } else {
+          alert("Registro exitoso. Revisa tu correo electrónico para confirmar la cuenta.");
+          closeModal();
+        }
+      } else {
+        // Iniciar sesión
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alert("Error al iniciar sesión: " + error.message);
+        } else {
+          closeModal();
+          checkUser();
+        }
+      }
+    });
+
+    // 4. Cerrar sesión
+    async function logout() {
+      await supabase.auth.signOut();
+      checkUser();
+    }
+
+    // 5. Verificar estado de la sesión
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const openBtn = document.getElementById('open-auth-btn');
+      const userInfo = document.getElementById('user-info');
+      const userEmail = document.getElementById('user-email');
+
+      if (user) {
+        openBtn.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userEmail.innerText = `Hola, ${user.email} `;
+      } else {
+        openBtn.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+      }
+    }
+
+    // Comprobar la sesión al cargar la página
+    checkUser();
+  </script>
+</body>
+</html>
