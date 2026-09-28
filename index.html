@@ -3,162 +3,1636 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Sitio Web</title>  
-  
-  <!-- Carga del SDK de Supabase -->
+
+  <title>Calculadora de Prestaciones Laborales - El Salvador</title>
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 20px; 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
     }
-    
-    /* Estilos del modal flotante */
+
+    body {
+      background-color: #ffffff;
+      color: #111111;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 0;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 220px 30px 0;
+      border-color: transparent #1a1b4f transparent transparent;
+      z-index: 1;
+    }
+
+    .calculator-container {
+      max-width: 750px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 25px 20px 40px 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding-right: 30px;
+      gap: 20px;
+    }
+
+    .doc-title-group h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1a1b4f;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .doc-title-group p {
+      color: #444;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    #user-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-auth {
+      background: #c8c1ea;
+      color: black;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+
+    .btn-auth:hover {
+      background: #553cde;
+      color: white;
+    }
+
+    .btn-logout {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .user-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #1a1b4f;
+    }
+
+    .divider-line {
+      height: 2px;
+      background-color: #888888;
+      margin-bottom: 30px;
+      border: none;
+    }
+
+    .section-block {
+      margin-bottom: 35px;
+    }
+
+    .section-header-banner {
+      background-color: #c8c1ea;
+      color: #111111;
+      padding: 9px 14px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      border-radius: 2px;
+      letter-spacing: 0.3px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .form-group label {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #222222;
+      min-width: 130px;
+      line-height: 1.2;
+    }
+
+    .form-group input,
+    .form-group select {
+      flex: 1;
+      height: 36px;
+      border: 1px solid #222222;
+      border-radius: 2px;
+      padding: 4px 8px;
+      font-size: 0.88rem;
+      background-color: #ffffff;
+      outline: none;
+      color: #000;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #c8c1ea;
+      box-shadow: 0 0 3px rgba(107, 82, 237, 0.5);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex: 1;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .radio-label input[type="radio"],
+    .radio-label input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: #c8c1ea;
+      cursor: pointer;
+    }
+
+    .conditional-box {
+      margin-top: 12px;
+      padding: 12px;
+      background-color: #f8f7fd;
+      border: 1px dashed #c8c1ea;
+      border-radius: 4px;
+    }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 3px;
+      display: block;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background-color: #1a1b4f;
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      letter-spacing: 0.5px;
+      transition: background-color 0.2s;
+    }
+
+    .btn-submit:hover {
+      background-color: #6b52ed;
+    }
+
+    #result-card {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f0fdf4;
+      border: 1px solid #166534;
+      border-radius: 4px;
+    }
+
+    #result-card h3 {
+      color: #166534;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+
+    #result-details p {
+      margin: 6px 0;
+      font-size: 0.88rem;
+    }
+
+    .pdf-button {
+      width: 100%;
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .pdf-button:hover {
+      background: #b91c1c;
+    }
+
     .modal {
-      display: none; 
-      position: fixed; 
-      top: 0; left: 0; 
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      justify-content: center; 
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
       align-items: center;
       z-index: 1000;
+      padding: 20px;
     }
-    
+
     .modal-content {
-      background: #fff; 
-      padding: 20px; 
-      border-radius: 8px; 
-      width: 300px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      width: 360px;
+      max-width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border: 2px solid #6b52ed;
     }
-    
-    .hidden { 
-      display: none; 
+
+    .modal-content h3 {
+      color: #1a1b4f;
+      margin-bottom: 12px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .modal-input {
+      width: 100% !important;
+      height: 36px !important;
+      margin-bottom: 10px;
+      border: 1px solid #222 !important;
+      border-radius: 3px !important;
+      padding: 8px !important;
+    }
+
+    @media (max-width: 600px) {
+
+      .calculator-container {
+        padding: 15px 12px 30px 12px;
+      }
+
+      .form-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .form-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .form-group label {
+        min-width: auto;
+      }
+
+      .doc-header {
+        flex-direction: column;
+        gap: 12px;
+        padding-right: 0;
+      }
+
+      #user-section {
+        width: 100%;
+      }
+
+      .radio-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
+
 <body>
 
-  <!-- Navegación y Botón -->
-  <header>
-    <h1>Bienvenido a mi sitio web</h1>
+<div class="calculator-container">
+
+  <!-- ENCABEZADO -->
+  <div class="doc-header">
+
+    <div class="doc-title-group">
+      <h2>Prestaciones Laborales</h2>
+      <p>El Salvador — Código de Trabajo y Ley de Renuncia Voluntaria</p>
+    </div>
+
+    <!-- USUARIO -->
     <div id="user-section">
-      <button id="open-auth-btn" onclick="openModal()">Iniciar Sesión / Registrarse</button>
+
+      <button
+        id="open-auth-btn"
+        class="btn-auth"
+        onclick="openModal()">
+        Iniciar Sesión
+      </button>
+
       <div id="user-info" class="hidden">
-        <span id="user-email"></span>
-        <button onclick="logout()">Cerrar Sesión</button>
+
+        <div>
+          <div id="user-name" class="user-name"></div>
+
+          <span
+            id="user-email"
+            style="font-size:0.72rem;color:#555;">
+          </span>
+        </div>
+
+        <button
+          class="btn-logout"
+          onclick="logout()">
+          Salir
+        </button>
+
       </div>
+
     </div>
-  </header>
 
-  <main>
-    <p>Este es el contenido público de tu página web visible para cualquier visitante.</p>
-  </main>
-
-  <!-- Modal de Autenticación -->
-  <div id="auth-modal" class="modal">
-    <div class="modal-content">
-      <h2 id="modal-title">Iniciar Sesión</h2>
-      
-      <form id="auth-form">
-        <input type="email" id="email" placeholder="Correo electrónico" required style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
-        <input type="password" id="password" placeholder="Contraseña" required style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
-        
-        <button type="submit" id="submit-btn" style="width: 100%;">Entrar</button>
-      </form>
-
-      <p style="margin-top: 15px; font-size: 0.9em;">
-        <span id="toggle-text">¿No tienes cuenta?</span> 
-        <a href="#" id="toggle-link" onclick="toggleAuthMode(event)">Regístrate aquí</a>
-      </p>
-      
-      <button onclick="closeModal()" style="margin-top: 10px; width: 100%;">Cancelar</button>
-    </div>
   </div>
 
-  <script>
-    // 1. Configuración de Supabase
-    const SUPABASE_URL = "https://jsigzhopcdlreblorjhe.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY"; 
+  <hr class="divider-line">
 
-    // Inicialización de la cliente de Supabase (renombrada a supabaseClient)
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let isSignUp = false;
+  <!-- FORMULARIO -->
 
-    // 2. Funciones para controlar el Modal
-    function openModal() {
-      document.getElementById('auth-modal').style.display = 'flex';
+  <form
+    id="calc-form"
+    onsubmit="calculateLiquidacion(event)">
+
+    <!-- DATOS FINANCIEROS Y FECHAS -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Datos Financieros y Periodo Laboral
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="salario">
+            Salario Mensual (USD)
+          </label>
+
+          <input
+            type="number"
+            id="salario"
+            step="0.01"
+            min="0"
+            placeholder="Ej. 408.80"
+            required>
+
+        </div>
+
+        <div class="form-group">
+          <label for="sector">Sector Económico</label>
+          <select id="sector">
+            <option value="comercio">Comercio y Servicios ($408.80)</option>
+            <option value="industria">Industria ($408.80)</option>
+            <option value="maquila">Maquila y Confección ($380.00)</option>
+            <option value="agropecuario">Agropecuario ($250.00)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="fecha-inicio">
+            Fecha de Inicio
+          </label>
+
+          <input
+            type="date"
+            id="fecha-inicio"
+            required
+            onchange="calcularTiempoAntiguedad()">
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="fecha-fin">
+            Fecha de Fin
+          </label>
+
+          <input
+            type="date"
+            id="fecha-fin"
+            required
+            onchange="calcularTiempoAntiguedad()">
+
+        </div>
+
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="anos">
+            Años Laborados
+          </label>
+
+          <input
+            type="number"
+            id="anos"
+            min="0"
+            value="0"
+            readonly>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="meses">
+            Meses (0-11)
+          </label>
+
+          <input
+            type="number"
+            id="meses"
+            min="0"
+            max="11"
+            value="0"
+            readonly>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="dias">
+            Días (0-29)
+          </label>
+
+          <input
+            type="number"
+            id="dias"
+            min="0"
+            max="29"
+            value="0"
+            readonly>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- CAUSA DE FINALIZACIÓN -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Causa de Finalización
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label>
+            Causa Principal
+          </label>
+
+          <div class="radio-group">
+
+            <label class="radio-label">
+
+              <input
+                type="radio"
+                name="causa"
+                value="despido"
+                checked
+                onclick="toggleRenunciaBox()">
+
+              Despido Injustificado
+
+            </label>
+
+            <label class="radio-label">
+
+              <input
+                type="radio"
+                name="causa"
+                value="renuncia"
+                onclick="toggleRenunciaBox()">
+
+              Renuncia Voluntaria
+
+            </label>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- RENUNCIA VOLUNTARIA -->
+
+      <div
+        id="renuncia-box"
+        class="conditional-box hidden">
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="cargo">
+              Tipo de Cargo
+            </label>
+
+            <select
+              id="cargo"
+              onchange="updatePreavisoText()">
+
+              <option value="empleado">
+                Empleado sin jefatura
+              </option>
+
+              <option value="jefatura">
+                Jefatura / Gerencia / Dirección
+              </option>
+
+            </select>
+
+          </div>
+
+          <div class="form-group">
+
+            <label for="preaviso">
+              ¿Informó al patrono (Preaviso)?
+            </label>
+
+            <select id="preaviso">
+
+              <option value="si">
+                Sí, dio preaviso en tiempo
+              </option>
+
+              <option value="no">
+                No dio preaviso
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <p
+          id="preaviso-info"
+          style="font-size:0.78rem;color:#6b52ed;font-weight:600;">
+
+          ℹ Requisito: Debe notificar con
+          <strong>15 días de anticipación</strong>
+          para cargos operativos.
+
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- AGUINALDO -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Aguinaldo Proporcional / Completo
+      </div>
+
+      <p style="font-size: 0.82rem; color: #444; margin-bottom: 12px;">
+        El cálculo del aguinaldo contempla la fecha de terminación respecto al ciclo legal anual (12 de diciembre del año anterior al 11 de diciembre del año actual).
+      </p>
+
+    </div>
+
+
+    <!-- VACACIONES -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Vacaciones
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label>
+            Estado de Vacaciones
+          </label>
+
+          <div class="radio-group">
+
+            <label class="radio-label">
+
+              <input
+                type="radio"
+                name="vacaciones_tipo"
+                value="completas"
+                checked
+                onclick="toggleVacacionesFechas()">
+
+              Año completo pagado / disfrutado
+
+            </label>
+
+            <label class="radio-label">
+
+              <input
+                type="radio"
+                name="vacaciones_tipo"
+                value="proporcional"
+                onclick="toggleVacacionesFechas()">
+
+              Pendientes / Proporcionales
+
+            </label>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="vacaciones-fechas-box"
+        class="conditional-box hidden">
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="meses-vacaciones-pendientes">
+              Meses acumulados del periodo actual
+            </label>
+
+            <input
+              type="number"
+              id="meses-vacaciones-pendientes"
+              min="0"
+              max="11"
+              value="0"
+              placeholder="Ej. 6">
+
+          </div>
+
+        </div>
+
+        <span class="help-text">
+          Se calcula según los Arts. 177 y 187 del Código de Trabajo (15 días base + 30% de recargo equivalente a 19.5 días anuales proporcionalizados).
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <!-- DIAS ASUETO Y HORAS EXTRAS -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Días de Asueto y Horas Extras No Pagadas
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="dias-asueto">
+            Días Asueto Laborados
+          </label>
+
+          <input
+            type="number"
+            id="dias-asueto"
+            min="0"
+            value="0">
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="dias-descanso">
+            Descansos Laborados
+          </label>
+
+          <input
+            type="number"
+            id="dias-descanso"
+            min="0"
+            value="0">
+
+        </div>
+
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="horas-diurnas">
+            Horas Extras Diurnas
+          </label>
+
+          <input
+            type="number"
+            id="horas-diurnas"
+            min="0"
+            value="0">
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="horas-nocturnas">
+            Horas Extras Nocturnas
+          </label>
+
+          <input
+            type="number"
+            id="horas-nocturnas"
+            min="0"
+            value="0">
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- DEDUCCIONES LEGALES (AFP / ISSS) -->
+
+    <div class="section-block">
+
+      <div class="section-header-banner">
+        Deducciones Ley (AFP e ISSS)
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label class="radio-label">
+
+            <input
+              type="checkbox"
+              id="aplicar-deducciones"
+              checked>
+
+            Aplicar deducciones de AFP (7.25%) e ISSS (3% con tope $30.00) sobre salarios y prestaciones gravables (Aguinaldo, Vacaciones, Horas Extras). <em>Nota: Las indemnizaciones están exentas por ley.</em>
+
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <button
+      type="submit"
+      class="btn-submit">
+
+      CALCULAR LIQUIDACIÓN
+
+    </button>
+
+  </form>
+
+
+  <!-- RESULTADO -->
+
+  <div
+    id="result-card"
+    class="hidden">
+
+    <h3>
+      Resumen del Cálculo
+    </h3>
+
+    <div id="result-details"></div>
+
+    <button
+      id="pdf-button"
+      class="pdf-button"
+      onclick="generarPDF()">
+
+      📄 GENERAR PDF
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- MODAL -->
+
+<div
+  id="auth-modal"
+  class="modal">
+
+  <div class="modal-content">
+
+    <h3 id="modal-title">
+      Iniciar Sesión
+    </h3>
+
+    <form id="auth-form">
+
+      <!-- NOMBRE SOLO PARA REGISTRO -->
+
+      <div
+        id="name-container"
+        class="hidden">
+
+        <input
+          type="text"
+          id="full-name"
+          class="modal-input"
+          placeholder="Nombre completo">
+
+      </div>
+
+
+      <input
+        type="email"
+        id="email"
+        class="modal-input"
+        placeholder="Correo electrónico"
+        required>
+
+
+      <input
+        type="password"
+        id="password"
+        class="modal-input"
+        placeholder="Contraseña"
+        required>
+
+
+      <button
+        type="submit"
+        id="submit-btn"
+        class="btn-submit"
+        style="margin-top:0;">
+
+        Entrar
+
+      </button>
+
+    </form>
+
+
+    <p
+      style="margin-top:12px;font-size:0.82em;text-align:center;">
+
+      <span id="toggle-text">
+        ¿No tienes cuenta?
+      </span>
+
+      <a
+        href="#"
+        id="toggle-link"
+        onclick="toggleAuthMode(event)"
+        style="color:#6b52ed;font-weight:bold;">
+
+        Regístrate aquí
+
+      </a>
+
+    </p>
+
+
+    <button
+      onclick="closeModal()"
+      style="
+        margin-top:8px;
+        width:100%;
+        padding:7px;
+        background:#e2e8f0;
+        border:none;
+        border-radius:2px;
+        cursor:pointer;
+        font-size:0.85rem;">
+
+      Cancelar
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  /* =====================================================
+     SUPABASE
+  ===================================================== */
+
+  const SUPABASE_URL =
+    "https://jsigzhopcdlreblorjhe.supabase.co";
+
+  const SUPABASE_ANON_KEY =
+    "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY";
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+
+  let isSignUp = false;
+  let ultimoCalculo = null;
+
+
+  /* =====================================================
+     CÁLCULO AUTOMÁTICO DE ANTIGÜEDAD (FECHAS)
+  ===================================================== */
+
+  function calcularTiempoAntiguedad() {
+    const fInicio = document.getElementById("fecha-inicio").value;
+    const fFin = document.getElementById("fecha-fin").value;
+
+    if (!fInicio || !fFin) return;
+
+    const inicio = new Date(fInicio);
+    const fin = new Date(fFin);
+
+    if (fin < inicio) {
+      alert("La fecha de fin debe ser posterior a la fecha de inicio.");
+      return;
     }
 
-    function closeModal() {
-      document.getElementById('auth-modal').style.display = 'none';
+    let anos = fin.getFullYear() - inicio.getFullYear();
+    let meses = fin.getMonth() - inicio.getMonth();
+    let dias = fin.getDate() - inicio.getDate();
+
+    if (dias < 0) {
+      meses--;
+      const ultimoDiaMesAnterior = new Date(fin.getFullYear(), fin.getMonth(), 0).getDate();
+      dias += ultimoDiaMesAnterior;
     }
 
-    function toggleAuthMode(e) {
-      e.preventDefault();
-      isSignUp = !isSignUp;
-      document.getElementById('modal-title').innerText = isSignUp ? "Crear Cuenta" : "Iniciar Sesión";
-      document.getElementById('submit-btn').innerText = isSignUp ? "Registrarse" : "Entrar";
-      document.getElementById('toggle-text').innerText = isSignUp ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
-      document.getElementById('toggle-link').innerText = isSignUp ? "Inicia sesión" : "Regístrate aquí";
+    if (meses < 0) {
+      anos--;
+      meses += 12;
     }
 
-    // 3. Manejo de Registro e Inicio de Sesión
-    document.getElementById('auth-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+    document.getElementById("anos").value = anos;
+    document.getElementById("meses").value = meses;
+    document.getElementById("dias").value = dias;
+  }
 
-      if (isSignUp) {
-        // Registro
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) {
-          alert("Error al registrarse: " + error.message);
-        } else {
-          alert("Registro completado. Revisa tu correo o prueba iniciar sesión.");
-          closeModal();
-          checkUser();
-        }
-      } else {
-        // Inicio de sesión
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-          alert("Error al iniciar sesión: " + error.message);
-        } else {
-          closeModal();
-          checkUser();
-        }
-      }
-    });
 
-    // 4. Cerrar sesión
-    async function logout() {
-      await supabaseClient.auth.signOut();
-      checkUser();
+  /* =====================================================
+     MOSTRAR / OCULTAR RENUNCIA
+  ===================================================== */
+
+  function toggleRenunciaBox() {
+
+    const causa =
+      document.querySelector(
+        'input[name="causa"]:checked'
+      ).value;
+
+    const box =
+      document.getElementById("renuncia-box");
+
+    if (causa === "renuncia") {
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
     }
 
-    // 5. Verificar estado de la sesión activa
-    async function checkUser() {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+  }
+
+
+  /* =====================================================
+     TEXTO DEL PREAVISO
+  ===================================================== */
+
+  function updatePreavisoText() {
+
+    const cargo =
+      document.getElementById("cargo").value;
+
+    const infoText =
+      document.getElementById("preaviso-info");
+
+    if (cargo === "jefatura") {
+
+      infoText.innerHTML =
+        "ℹ Requisito: Debe notificar con " +
+        "<strong>30 días de anticipación</strong> " +
+        "por cargo de Jefatura/Gerencia.";
+
+    } else {
+
+      infoText.innerHTML =
+        "ℹ Requisito: Debe notificar con " +
+        "<strong>15 días de anticipación</strong> " +
+        "para cargos operativos.";
+
+    }
+
+  }
+
+
+  /* =====================================================
+     VACACIONES
+  ===================================================== */
+
+  function toggleVacacionesFechas() {
+
+    const esProporcional =
+      document.querySelector(
+        'input[name="vacaciones_tipo"]:checked'
+      ).value === "proporcional";
+
+    const box =
+      document.getElementById("vacaciones-fechas-box");
+
+    if (esProporcional) {
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+
+  }
+
+
+  /* =====================================================
+     CALCULAR LIQUIDACIÓN
+  ===================================================== */
+
+  async function calculateLiquidacion(e) {
+
+    e.preventDefault();
+
+    const {
+      data: { user }
+    } = await supabaseClient.auth.getUser();
+
+
+    if (!user) {
+      alert("Debes iniciar sesión para calcular y generar tu comprobante.");
+      openModal();
+      return;
+    }
+
+
+    const salario = parseFloat(document.getElementById("salario").value) || 0;
+    const anos = parseInt(document.getElementById("anos").value) || 0;
+    const meses = parseInt(document.getElementById("meses").value) || 0;
+    const dias = parseInt(document.getElementById("dias").value) || 0;
+
+    const fechaInicio = document.getElementById("fecha-inicio").value;
+    const fechaFin = document.getElementById("fecha-fin").value;
+
+    const causa = document.querySelector('input[name="causa"]:checked').value;
+    const cargo = document.getElementById("cargo").value;
+    const preaviso = document.getElementById("preaviso").value;
+    const sector = document.getElementById("sector").value;
+
+    // Obtener salario mínimo mensual de referencia según sector
+    let salarioMinimoMensual = 408.80;
+    if (sector === "maquila") salarioMinimoMensual = 380.00;
+    if (sector === "agropecuario") salarioMinimoMensual = 250.00;
+
+    const salarioDiarioReal = salario / 30;
+    const salarioHora = salarioDiarioReal / 8;
+
+    let indemnizacion = 0;
+    let observacionIndemnizacion = "";
+
+    const totalTiempoAnos = anos + (meses / 12) + (dias / 365);
+
+    /* =====================================================
+       INDEMNIZACIÓN (Con Topes Legales de El Salvador)
+    ===================================================== */
+
+    if (causa === "despido") {
+      // Art. 58 CT: Tope diario es 4 salarios mínimos diarios legales
+      const salarioMinimoDiario = salarioMinimoMensual / 30;
+      const topeSalarioDiarioDespido = salarioMinimoDiario * 4;
+      const salarioDiarioComputable = Math.min(salarioDiarioReal, topeSalarioDiarioDespido);
+
+      indemnizacion = totalTiempoAnos * (salarioDiarioComputable * 30);
       
-      const openBtn = document.getElementById('open-auth-btn');
-      const userInfo = document.getElementById('user-info');
-      const userEmail = document.getElementById('user-email');
-
-      if (user) {
-        openBtn.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        userEmail.innerText = `Hola, ${user.email} `;
-      } else {
-        openBtn.classList.remove('hidden');
-        userInfo.classList.add('hidden');
+      // Mínimo legal por despido: 15 días de salario
+      const minimoIndemnizacion = salarioDiarioComputable * 15;
+      if (indemnizacion < minimoIndemnizacion && totalTiempoAnos > 0) {
+        indemnizacion = minimoIndemnizacion;
       }
+
+      observacionIndemnizacion = "Aplica indemnización por despido injustificado (Art. 58 Código de Trabajo). Exenta de deducciones.";
+
+    } else if (causa === "renuncia") {
+
+      if (preaviso === "no") {
+        indemnizacion = 0;
+        observacionIndemnizacion = "No aplica prestación por renuncia debido a la falta de preaviso legal.";
+      } else if (anos < 2) {
+        indemnizacion = 0;
+        observacionIndemnizacion = "Requiere un mínimo de 2 años de servicio continuo para tener derecho a la prestación por renuncia (Ley de Renuncia Voluntaria).";
+      } else {
+        // Ley de Renuncia Voluntaria: 15 días por año. Tope de salario base: 2 salarios mínimos del sector
+        const topeSalarioMensualRenuncia = salarioMinimoMensual * 2;
+        const salarioMensualComputable = Math.min(salario, topeSalarioMensualRenuncia);
+        const salarioDiarioRenuncia = salarioMensualComputable / 30;
+
+        indemnizacion = totalTiempoAnos * (salarioDiarioRenuncia * 15);
+        observacionIndemnizacion = "Aplica prestación por renuncia voluntaria cumpliendo requisitos de ley. Exenta de deducciones.";
+      }
+
     }
 
-    // Comprobar la sesión al cargar la página
+
+    /* =====================================================
+       AGUINALDO (Arts. 198 y 202 Código de Trabajo)
+    ===================================================== */
+
+    let pagoAguinaldo = 0;
+    let diasAguinaldoBase = 15; // 1 a menos de 3 años
+
+    if (anos >= 3 && anos < 10) {
+      diasAguinaldoBase = 19;
+    } else if (anos >= 10) {
+      diasAguinaldoBase = 21;
+    }
+
+    if (fechaFin) {
+      const fin = new Date(fechaFin);
+      const anioFin = fin.getFullYear();
+      
+      // Ciclo anual de aguinaldo: 12 de dic del año anterior al 11 de dic del año actual
+      let inicioCiclo = new Date(anioFin - 1, 11, 12);
+      if (fin < inicioCiclo) {
+        inicioCiclo = new Date(anioFin - 2, 11, 12);
+      }
+
+      const diffTime = Math.max(0, fin - inicioCiclo);
+      const diasTrabajadosAnio = Math.min(365, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+      pagoAguinaldo = ((diasAguinaldoBase * salarioDiarioReal) / 365) * diasTrabajadosAnio;
+    }
+
+
+    /* =====================================================
+       VACACIONES (Arts. 177 y 187 Código de Trabajo)
+    ===================================================== */
+
+    const esProporcionalVac = document.querySelector('input[name="vacaciones_tipo"]:checked').value === "proporcional";
+    let pagoVacaciones = 0;
+
+    if (esProporcionalVac) {
+      const mesesVac = parseFloat(document.getElementById("meses-vacaciones-pendientes").value) || 0;
+      // 15 días base + 30% recargo = 19.5 días por año completo (1.625 días por mes)
+      const diasVacacionesEquivalentes = (19.5 / 12) * mesesVac;
+      pagoVacaciones = diasVacacionesEquivalentes * salarioDiarioReal;
+    }
+
+
+    /* =====================================================
+       HORAS EXTRAS Y DÍAS ESPECIALES
+    ===================================================== */
+
+    const horasDiurnas = parseFloat(document.getElementById("horas-diurnas").value) || 0;
+    const horasNocturnas = parseFloat(document.getElementById("horas-nocturnas").value) || 0;
+    const diasAsueto = parseFloat(document.getElementById("dias-asueto").value) || 0;
+    const diasDescanso = parseFloat(document.getElementById("dias-descanso").value) || 0;
+
+    const pagoHorasDiurnas = horasDiurnas * (salarioHora * 2.0);
+    const pagoHorasNocturnas = horasNocturnas * (salarioHora * 2.25);
+    const pagoAsuetos = diasAsueto * (salarioDiarioReal * 2.0);
+    const pagoDescansos = diasDescanso * (salarioDiarioReal * 2.0);
+
+    const totalHorasExtrasYAsuetos = pagoHorasDiurnas + pagoHorasNocturnas + pagoAsuetos + pagoDescansos;
+
+
+    /* =====================================================
+       DEDUCCIONES LEGALES (ISSS / AFP)
+       * Importante: La indemnización NO lleva deducción de ISSS ni AFP.
+    ===================================================== */
+
+    const aplicarDeducciones = document.getElementById("aplicar-deducciones").checked;
+    let deduccionISSS = 0;
+    let deduccionAFP = 0;
+
+    // Solamente salarios, vacaciones, horas extras y aguinaldo (si aplica la fracción gravable) son sujetos a deducción
+    const baseGravableDeducciones = pagoVacaciones + totalHorasExtrasYAsuetos;
+
+    if (aplicarDeducciones && baseGravableDeducciones > 0) {
+      // ISSS: 3% con tope máximo de $30.00
+      deduccionISSS = Math.min(baseGravableDeducciones * 0.03, 30.00);
+      
+      // AFP: 7.25%
+      deduccionAFP = baseGravableDeducciones * 0.0725;
+    }
+
+    const totalDeducciones = deduccionISSS + deduccionAFP;
+
+
+    /* =====================================================
+       TOTAL
+    ===================================================== */
+
+    const totalBruto = indemnizacion + pagoAguinaldo + pagoVacaciones + totalHorasExtrasYAsuetos;
+    const totalPagar = totalBruto - totalDeducciones;
+
+    const nombreUsuario = user.user_metadata?.full_name || user.email;
+
+
+    /* =====================================================
+       GUARDAR RESULTADOS
+    ===================================================== */
+
+    ultimoCalculo = {
+      nombre: nombreUsuario,
+      email: user.email,
+      fecha: new Date().toLocaleDateString("es-SV"),
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
+      salario: salario,
+      salarioDiario: salarioDiarioReal,
+      anos: anos,
+      meses: meses,
+      dias: dias,
+      causa: causa === "despido" ? "Despido Injustificado" : "Renuncia Voluntaria",
+      cargo: cargo === "jefatura" ? "Jefatura / Gerencia / Dirección" : "Empleado sin jefatura",
+      preaviso: causa === "renuncia" ? (preaviso === "si" ? "Sí" : "No") : "No aplica",
+      indemnizacion: indemnizacion,
+      pagoAguinaldo: pagoAguinaldo,
+      pagoVacaciones: pagoVacaciones,
+      totalHorasExtrasYAsuetos: totalHorasExtrasYAsuetos,
+      deduccionISSS: deduccionISSS,
+      deduccionAFP: deduccionAFP,
+      totalDeducciones: totalDeducciones,
+      totalBruto: totalBruto,
+      total: totalPagar,
+      observacion: observacionIndemnizacion
+    };
+
+
+    /* =====================================================
+       MOSTRAR RESULTADO
+    ===================================================== */
+
+    const resultCard = document.getElementById("result-card");
+    const details = document.getElementById("result-details");
+
+    details.innerHTML = `
+      <p><strong>Trabajador:</strong> ${escapeHTML(nombreUsuario)}</p>
+      <p><strong>Periodo:</strong> ${fechaInicio} al ${fechaFin} (${anos} añ, ${meses} m, ${dias} d)</p>
+      <p><strong>Salario Diario Real:</strong> $${salarioDiarioReal.toFixed(2)}</p>
+      <p><strong>Causa:</strong> ${ultimoCalculo.causa}</p>
+      <hr style="margin:8px 0; border:0; border-top:1px solid #cbd5e1;">
+      <p><strong>Indemnización / Prestación (Sin Descuentos):</strong> $${indemnizacion.toFixed(2)}</p>
+      <p><em>${observacionIndemnizacion}</em></p>
+      <p><strong>Aguinaldo Proporcional:</strong> $${pagoAguinaldo.toFixed(2)}</p>
+      <p><strong>Vacaciones Proporcionales (+30%):</strong> $${pagoVacaciones.toFixed(2)}</p>
+      <p><strong>Horas extras y Asuetos:</strong> $${totalHorasExtrasYAsuetos.toFixed(2)}</p>
+      <hr style="margin:8px 0; border:0; border-top:1px solid #cbd5e1;">
+      <p style="color:#c53030;"><strong>Deducción ISSS (3%):</strong> -$${deduccionISSS.toFixed(2)}</p>
+      <p style="color:#c53030;"><strong>Deducción AFP (7.25%):</strong> -$${deduccionAFP.toFixed(2)}</p>
+      <hr style="margin:8px 0; border:0; border-top:1px solid #166534;">
+      <h4 style="font-size:1.1rem; color:#15803d;">
+        Total Neto a Recibir: $${totalPagar.toFixed(2)}
+      </h4>
+    `;
+
+    resultCard.classList.remove("hidden");
+
+  }
+
+
+  /* =====================================================
+     ESCAPAR HTML
+  ===================================================== */
+
+  function escapeHTML(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+
+  /* =====================================================
+     MODAL
+  ===================================================== */
+
+  function openModal() {
+    document.getElementById("auth-modal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("auth-modal").style.display = "none";
+  }
+
+
+  /* =====================================================
+     CAMBIAR LOGIN / REGISTRO
+  ===================================================== */
+
+  function toggleAuthMode(e) {
+
+    e.preventDefault();
+    isSignUp = !isSignUp;
+
+    document.getElementById("modal-title").innerText =
+      isSignUp ? "Crear Cuenta" : "Iniciar Sesión";
+
+    document.getElementById("submit-btn").innerText =
+      isSignUp ? "Registrarse" : "Entrar";
+
+    document.getElementById("name-container").classList.toggle("hidden", !isSignUp);
+    document.getElementById("full-name").required = isSignUp;
+
+    document.getElementById("toggle-text").innerText =
+      isSignUp ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
+
+    document.getElementById("toggle-link").innerText =
+      isSignUp ? "Inicia sesión" : "Regístrate aquí";
+
+  }
+
+
+  /* =====================================================
+     LOGIN / REGISTRO
+  ===================================================== */
+
+  document.getElementById("auth-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (isSignUp) {
+      const fullName = document.getElementById("full-name").value.trim();
+      if (!fullName) {
+        alert("Por favor ingresa tu nombre completo.");
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      alert("Registro completado correctamente.");
+      closeModal();
+      await checkUser();
+
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      closeModal();
+      await checkUser();
+    }
+  });
+
+
+  /* =====================================================
+     CERRAR SESIÓN
+  ===================================================== */
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    ultimoCalculo = null;
     checkUser();
-  </script>
+  }
+
+
+  /* =====================================================
+     COMPROBAR USUARIO
+  ===================================================== */
+
+  async function checkUser() {
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (user) {
+      document.getElementById("open-auth-btn").classList.add("hidden");
+      document.getElementById("user-info").classList.remove("hidden");
+
+      const nombre = user.user_metadata?.full_name || "Usuario";
+
+      document.getElementById("user-name").innerText = nombre;
+      document.getElementById("user-email").innerText = user.email;
+    } else {
+      document.getElementById("open-auth-btn").classList.remove("hidden");
+      document.getElementById("user-info").classList.add("hidden");
+    }
+
+  }
+
+
+  /* =====================================================
+     GENERAR PDF
+  ===================================================== */
+
+  async function generarPDF() {
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      alert("Debes iniciar sesión para generar el PDF.");
+      openModal();
+      return;
+    }
+
+    if (!ultimoCalculo) {
+      alert("Primero debes realizar el cálculo.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const nombre = user.user_metadata?.full_name || user.email;
+
+    // Encabezado PDF
+    doc.setFillColor(26, 27, 79);
+    doc.rect(0, 0, 210, 32, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("PRESTACIONES LABORALES", 105, 13, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("El Salvador — Hoja de Cálculo Formal", 105, 21, { align: "center" });
+    doc.text("Comprobante de cálculo estimado", 105, 27, { align: "center" });
+
+    let y = 42;
+
+    // Sección Usuario
+    doc.setTextColor(26, 27, 79);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("1. Información del Trabajador y Periodo", 20, y);
+
+    y += 7;
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Nombre: ${nombre}`, 20, y);
+    doc.text(`Correo: ${user.email}`, 120, y);
+
+    y += 5;
+    doc.text(`Fecha Inicio: ${ultimoCalculo.fechaInicio}`, 20, y);
+    doc.text(`Fecha Fin: ${ultimoCalculo.fechaFin}`, 120, y);
+
+    y += 5;
+    doc.text(`Tiempo Laborado: ${ultimoCalculo.anos} años, ${ultimoCalculo.meses} meses, ${ultimoCalculo.dias} días`, 20, y);
+    doc.text(`Fecha de Emisión: ${ultimoCalculo.fecha}`, 120, y);
+
+    y += 10;
+    doc.setTextColor(26, 27, 79);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("2. Desglose de Prestaciones", 20, y);
+
+    y += 7;
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+
+    doc.text(`Salario Mensual Base: $${ultimoCalculo.salario.toFixed(2)}`, 20, y);
+    doc.text(`Salario Diario: $${ultimoCalculo.salarioDiario.toFixed(2)}`, 120, y);
+
+    y += 6;
+    doc.text(`Causa de Término: ${ultimoCalculo.causa}`, 20, y);
+
+    y += 6;
+    doc.text(`Indemnización / Prestación (Exenta): $${ultimoCalculo.indemnizacion.toFixed(2)}`, 20, y);
+
+    y += 6;
+    doc.text(`Aguinaldo Proporcional: $${ultimoCalculo.pagoAguinaldo.toFixed(2)}`, 20, y);
+
+    y += 6;
+    doc.text(`Vacaciones Proporcionales (+30% Recargo): $${ultimoCalculo.pagoVacaciones.toFixed(2)}`, 20, y);
+
+    y += 6;
+    doc.text(`Horas Extras / Asuetos / Descansos: $${ultimoCalculo.totalHorasExtrasYAsuetos.toFixed(2)}`, 20, y);
+
+    y += 10;
+    doc.setTextColor(26, 27, 79);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("3. Deducciones de Ley", 20, y);
+
+    y += 7;
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Deducción ISSS (Salud): -$${ultimoCalculo.deduccionISSS.toFixed(2)}`, 20, y);
+    doc.text(`Deducción AFP (7.25%): -$${ultimoCalculo.deduccionAFP.toFixed(2)}`, 120, y);
+
+    y += 12;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(220, 38, 38);
+    doc.line(20, y, 190, y);
+
+    y += 8;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(220, 38, 38);
+    doc.text(`TOTAL NETO A RECIBIR: $${ultimoCalculo.total.toFixed(2)}`, 20, y);
+
+    doc.save(`liquidacion_laboral_${nombre.toLowerCase().replace(/\s+/g, '_')}.pdf`);
+  }
+
+  // Inicializar verificación de usuario si existe sesión
+  checkUser();
+
+</script>
+
 </body>
 </html>
