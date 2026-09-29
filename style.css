@@ -79,7 +79,7 @@ body::before {
 
 
 .section-header-banner {
-    background-color: #c8c1ea;
+    background-color: #d2cee7;
     color: #111111;
     padding: 9px 14px;
     font-size: 0.98rem;
@@ -131,7 +131,7 @@ body::before {
 
 .form-group input:focus,
 .form-group select:focus {
-    border-color: #c8c1ea;
+    border-color: #d2cee7;
     box-shadow: 0 0 3px rgba(107, 82, 237, 0.5);
 }
 
@@ -159,7 +159,7 @@ body::before {
 .radio-label input[type="checkbox"] {
     width: 15px;
     height: 15px;
-    accent-color: #c8c1ea;
+    accent-color: #d2cee7;
     cursor: pointer;
 }
 
@@ -167,8 +167,8 @@ body::before {
 .conditional-box {
     margin-top: 12px;
     padding: 12px;
-    background-color: #f8f7fd;
-    border: 1px dashed #c8c1ea;
+    background-color: #d2cee7;
+    border: 1px dashed #d2cee7;
     border-radius: 4px;
 }
 
@@ -256,7 +256,7 @@ body::before {
 
 .info-card {
     background-color: #f8f7fd;
-    border: 1px solid #c8c1ea;
+    border: 1px solid #d2cee7;
     border-radius: 4px;
     padding: 12px;
     font-size: 0.78rem;
@@ -279,7 +279,7 @@ body::before {
     margin-top: 12px;
     padding: 10px 12px;
     background-color: #f8f7fd;
-    border: 1px dashed #c8c1ea;
+    border: 1px dashed #d2cee7;
     border-radius: 4px;
     color: #1a1b4f;
     font-size: 0.82rem;
@@ -299,7 +299,7 @@ body::before {
     margin-top: 10px;
     padding: 9px 10px;
     background: #ffffff;
-    border: 1px solid #c8c1ea;
+    border: 1px solid #d2cee7;
     border-radius: 3px;
     font-size: 0.78rem;
     color: #444;
@@ -363,7 +363,7 @@ body::before {
 
 .asueto-option:hover {
     background-color: #f8f7fd;
-    border-color: #c8c1ea;
+    border-color: #d2cee7;
 }
 
 
@@ -522,7 +522,7 @@ body::before {
     margin-top: 10px;
     padding: 10px;
     background: #ffffff;
-    border: 1px solid #c8c1ea;
+    border: 1px solid #d2cee7;
     font-size: 0.78rem;
     line-height: 1.4;
 }
