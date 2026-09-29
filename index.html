@@ -1,1108 +1,1217 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Prestaciones Laborales - El Salvador</title>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
 
-  <!-- jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    <title>
+        Calculadora de Prestaciones Laborales - El Salvador
+    </title>
 
-    body {
-      background-color: #ffffff;
-      color: #111111;
-      min-height: 100vh;
-      width: 100%;
-      position: relative;
-      overflow-x: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px 0;
-    }
+    <!-- =====================================================
+         SUPABASE
+    ====================================================== -->
 
-    body::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 0;
-      height: 0;
-      border-style: solid;
-      border-width: 0 220px 30px 0;
-      border-color: transparent #1a1b4f transparent transparent;
-      z-index: 1;
-    }
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    .calculator-container {
-      max-width: 800px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 25px 20px 40px 20px;
-      position: relative;
-      z-index: 2;
-    }
 
-    .doc-header {
-      margin-bottom: 16px;
-    }
+    <!-- =====================================================
+         JSPDF
+    ====================================================== -->
 
-    .doc-title-group h2 {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #1a1b4f;
-      letter-spacing: -0.5px;
-      margin-bottom: 4px;
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    .doc-title-group p {
-      color: #444;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
 
-    .divider-line {
-      height: 2px;
-      background-color: #888888;
-      margin-bottom: 30px;
-      border: none;
-    }
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
 
-    .section-block {
-      margin-bottom: 30px;
-    }
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
-    .section-header-banner {
-      background-color: #c8c1ea;
-      color: #111111;
-      padding: 9px 14px;
-      font-size: 0.98rem;
-      font-weight: 700;
-      margin-bottom: 18px;
-      border-radius: 2px;
-      letter-spacing: 0.3px;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 15px;
-      align-items: center;
-    }
-
-    .form-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-    }
-
-    .form-group label {
-      font-size: 0.83rem;
-      font-weight: 700;
-      color: #222222;
-      min-width: 130px;
-      line-height: 1.2;
-    }
-
-    .form-group input,
-    .form-group select {
-      flex: 1;
-      height: 36px;
-      border: 1px solid #222222;
-      border-radius: 2px;
-      padding: 4px 8px;
-      font-size: 0.88rem;
-      background-color: #ffffff;
-      outline: none;
-      color: #000;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      border-color: #c8c1ea;
-      box-shadow: 0 0 3px rgba(107, 82, 237, 0.5);
-    }
-
-    .radio-group {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      flex: 1;
-    }
-
-    .radio-label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: #333;
-    }
-
-    .radio-label input[type="radio"],
-    .radio-label input[type="checkbox"] {
-      width: 15px;
-      height: 15px;
-      accent-color: #c8c1ea;
-      cursor: pointer;
-    }
-
-    .conditional-box {
-      margin-top: 12px;
-      padding: 12px;
-      background-color: #f8f7fd;
-      border: 1px dashed #c8c1ea;
-      border-radius: 4px;
-    }
-
-    .help-text {
-      font-size: 0.75rem;
-      color: #555;
-      margin-top: 3px;
-      display: block;
-    }
-
-    .btn-submit {
-      width: 100%;
-      background-color: #1a1b4f;
-      color: #ffffff;
-      border: none;
-      padding: 12px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 10px;
-      letter-spacing: 0.5px;
-      transition: background-color 0.2s;
-    }
-
-    .btn-submit:hover {
-      background-color: #6b52ed;
-    }
-
-    #result-card {
-      margin-top: 24px;
-      padding: 16px;
-      background: #f0fdf4;
-      border: 1px solid #166534;
-      border-radius: 4px;
-    }
-
-    #result-card h3 {
-      color: #166534;
-      font-size: 1.05rem;
-      margin-bottom: 8px;
-    }
-
-    #result-details p {
-      margin: 6px 0;
-      font-size: 0.88rem;
-    }
-
-    .pdf-button {
-      width: 100%;
-      background: #dc2626;
-      color: white;
-      border: none;
-      padding: 12px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-
-    .pdf-button:hover {
-      background: #b91c1c;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 600px) {
-      .form-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-
-      .form-group {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-      }
-
-      .form-group label {
-        min-width: auto;
-      }
-
-      .radio-group {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-  </style>
 </head>
+
 
 <body>
 
+
 <div class="calculator-container">
 
-  <!-- ENCABEZADO -->
-  <div class="doc-header">
-    <div class="doc-title-group">
-      <h2>Prestaciones Laborales</h2>
-      <p>El Salvador — Código de Trabajo y Ley de Renuncia Voluntaria</p>
-    </div>
-  </div>
 
-  <hr class="divider-line">
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
 
-  <!-- FORMULARIO -->
-  <form id="calc-form" onsubmit="calculateLiquidacion(event)">
+    <div class="doc-header">
 
-    <!-- DATOS DE LAS PARTES -->
-    <div class="section-block">
-      <div class="section-header-banner">
-        I. Datos de las Partes
-      </div>
+        <div class="doc-title-group">
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="nombre-trabajador">Trabajador(a)</label>
-          <input type="text" id="nombre-trabajador" placeholder="Ej. ROBERTO ALFREDO AGUILAR" required>
+            <h2>
+                Prestaciones Laborales
+            </h2>
+
+            <p>
+                El Salvador — Código de Trabajo y Ley de Renuncia Voluntaria
+            </p>
+
         </div>
-        <div class="form-group">
-          <label for="dui-trabajador">DUI Trabajador</label>
-          <input type="text" id="dui-trabajador" placeholder="00000000-0" required>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="cargo-desempenado">Cargo Desempeñado</label>
-          <input type="text" id="cargo-desempenado" placeholder="Ej. Ingeniero de Software" required>
-        </div>
-        <div class="form-group">
-          <label for="nombre-patrono">Patrono / Empresa</label>
-          <input type="text" id="nombre-patrono" placeholder="Ej. Orion Software" required>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="dui-patrono">DUI Patrono / Rep.</label>
-          <input type="text" id="dui-patrono" placeholder="00000000-0">
-        </div>
-      </div>
     </div>
 
-    <!-- DATOS FINANCIEROS Y PERIODO -->
-    <div class="section-block">
-      <div class="section-header-banner">
-        II. Datos Financieros y Periodo Laboral
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="salario">Salario Mensual ($)</label>
-          <input type="number" id="salario" step="0.01" min="0" placeholder="Ej. 4000.00" required>
-        </div>
-        <div class="form-group">
-          <label for="sector">Sector Económico</label>
-          <select id="sector">
-            <option value="comercio">Comercio y Servicios ($408.80)</option>
-            <option value="industria">Industria ($408.80)</option>
-            <option value="maquila">Maquila y Confección ($380.00)</option>
-            <option value="agropecuario">Agropecuario ($250.00)</option>
-          </select>
-        </div>
-      </div>
+    <hr class="divider-line">
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="fecha-inicio">Fecha de Ingreso</label>
-          <input type="date" id="fecha-inicio" required onchange="calcularTiempoAntiguedad()">
-        </div>
-        <div class="form-group">
-          <label for="fecha-fin">Fecha Terminación</label>
-          <input type="date" id="fecha-fin" required onchange="calcularTiempoAntiguedad()">
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="anos">Años Laborados</label>
-          <input type="number" id="anos" min="0" value="0" readonly>
+    <!-- =====================================================
+         FORMULARIO
+    ====================================================== -->
+
+    <form
+        id="calc-form"
+        onsubmit="calculateLiquidacion(event)"
+    >
+
+
+        <!-- =================================================
+             I. DATOS DE LAS PARTES
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                I. Datos de las Partes
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="nombre-trabajador">
+                        Trabajador(a)
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre-trabajador"
+                        placeholder="Ej. ROBERTO ALFREDO AGUILAR"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="dui-trabajador">
+                        DUI Trabajador
+                    </label>
+
+                    <input
+                        type="text"
+                        id="dui-trabajador"
+                        placeholder="00000000-0"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="cargo-desempenado">
+                        Cargo Desempeñado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="cargo-desempenado"
+                        placeholder="Ej. Ingeniero de Software"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="nombre-patrono">
+                        Patrono / Empresa
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre-patrono"
+                        placeholder="Ej. Orion Software"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="dui-patrono">
+                        DUI Patrono / Rep.
+                    </label>
+
+                    <input
+                        type="text"
+                        id="dui-patrono"
+                        placeholder="00000000-0"
+                    >
+
+                </div>
+
+            </div>
+
         </div>
-        <div class="form-group">
-          <label for="meses">Meses (0-11)</label>
-          <input type="number" id="meses" min="0" max="11" value="0" readonly>
+
+
+
+        <!-- =================================================
+             II. DATOS FINANCIEROS
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                II. Datos Financieros y Periodo Laboral
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="salario">
+                        Salario Mensual ($)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="salario"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 4000.00"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="sector">
+                        Sector Económico
+                    </label>
+
+                    <select id="sector">
+
+                        <option value="comercio">
+                            Comercio y Servicios ($408.80)
+                        </option>
+
+                        <option value="industria">
+                            Industria ($408.80)
+                        </option>
+
+                        <option value="maquila">
+                            Maquila y Confección ($402.32)
+                        </option>
+
+                        <option value="agropecuario">
+                            Agropecuario ($272.53)
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="fecha-inicio">
+                        Fecha de Ingreso
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fecha-inicio"
+                        required
+                        onchange="calcularTiempoAntiguedad()"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="fecha-fin">
+                        Fecha Terminación
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fecha-fin"
+                        required
+                        onchange="calcularTiempoAntiguedad()"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="anos">
+                        Años Laborados
+                    </label>
+
+                    <input
+                        type="number"
+                        id="anos"
+                        min="0"
+                        value="0"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="meses">
+                        Meses (0-11)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="meses"
+                        min="0"
+                        max="11"
+                        value="0"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="dias">
+                        Días (0-29)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="dias"
+                        min="0"
+                        max="29"
+                        value="0"
+                        readonly
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="salario-alerta"
+                class="salary-alert hidden"
+            ></div>
+
+
+            <div
+                id="tope-indemnizacion"
+                class="calculation-preview"
+            ></div>
+
         </div>
-        <div class="form-group">
-          <label for="dias">Días (0-29)</label>
-          <input type="number" id="dias" min="0" max="29" value="0" readonly>
+
+
+
+        <!-- =================================================
+             III. CAUSA DE TERMINACIÓN
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                III. Causa de Terminación
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        Causa Principal
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="causa"
+                                value="despido"
+                                checked
+                                onclick="toggleRenunciaBox()"
+                            >
+
+                            Despido sin causa justificada
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="causa"
+                                value="renuncia"
+                                onclick="toggleRenunciaBox()"
+                            >
+
+                            Renuncia Voluntaria
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- CAJA RENUNCIA -->
+
+            <div
+                id="renuncia-box"
+                class="conditional-box hidden"
+            >
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="cargo-tipo">
+                            Tipo de Cargo
+                        </label>
+
+                        <select
+                            id="cargo-tipo"
+                            onchange="updatePreavisoText()"
+                        >
+
+                            <option value="empleado">
+                                Empleado sin jefatura
+                            </option>
+
+                            <option value="jefatura">
+                                Jefatura / Gerencia / Dirección
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="preaviso">
+                            ¿Dio Preaviso?
+                        </label>
+
+                        <select
+                            id="preaviso"
+                            onchange="verificarElegibilidadRenuncia()"
+                        >
+
+                            <option value="si">
+                                Sí, dio preaviso legal
+                            </option>
+
+                            <option value="no">
+                                No dio preaviso
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <p
+                    id="preaviso-info"
+                    class="preaviso-info"
+                >
+                    ℹ Requisito: Notificar con 15 días
+                    de anticipación para cargos operativos.
+                </p>
+
+
+                <div
+                    id="renuncia-estado"
+                    class="renuncia-estado"
+                >
+                    Verificación pendiente.
+                </div>
+
+            </div>
+
         </div>
-      </div>
+
+
+
+        <!-- =================================================
+             IV. INDEMNIZACIÓN
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                IV. Indemnización por Despido Injustificado
+            </div>
+
+
+            <div class="info-card">
+
+                <p>
+                    <strong>Monto por año:</strong>
+                    30 días de salario por cada año laborado,
+                    considerando la fracción correspondiente.
+                </p>
+
+
+                <p>
+                    <strong>Tope legal:</strong>
+                    4 salarios mínimos del sector seleccionado.
+                </p>
+
+
+                <p>
+                    Si el salario supera el límite aplicable,
+                    se mostrará el salario computable utilizado.
+                </p>
+
+            </div>
+
+
+            <div
+                id="indemnizacion-info"
+                class="calculation-preview"
+            >
+                El cálculo aparecerá al procesar la liquidación.
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             V. AGUINALDO
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                V. Aguinaldo
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        Modalidad de Pago
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="aguinaldo_tipo"
+                                value="completo"
+                                checked
+                            >
+
+                            Aguinaldo Completo
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="aguinaldo_tipo"
+                                value="proporcional"
+                            >
+
+                            Aguinaldo Proporcional
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <span class="help-text">
+                El sistema determina el período correspondiente
+                utilizando la fecha de retiro.
+            </span>
+
+        </div>
+
+
+
+        <!-- =================================================
+             VI. VACACIONES
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                VI. Vacaciones
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        Tipo de Vacación
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="vacaciones_tipo"
+                                value="completas"
+                                checked
+                                onclick="toggleVacacionesFechas()"
+                            >
+
+                            Vacaciones Totales (Completas)
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="vacaciones_tipo"
+                                value="proporcional"
+                                onclick="toggleVacacionesFechas()"
+                            >
+
+                            Vacaciones Proporcionales
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div id="vacaciones-fechas-box">
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="ultima-vacacion-inicio">
+                            Últimas Vacaciones Desde
+                        </label>
+
+                        <input
+                            type="date"
+                            id="ultima-vacacion-inicio"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="ultima-vacacion-fin">
+                            Hasta
+                        </label>
+
+                        <input
+                            type="date"
+                            id="ultima-vacacion-fin"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="meses-vacaciones-pendientes">
+                            Meses pendientes del ciclo
+                        </label>
+
+                        <input
+                            type="number"
+                            id="meses-vacaciones-pendientes"
+                            min="0"
+                            max="11"
+                            value="0"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="recargo-vacaciones">
+                            Recargo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="recargo-vacaciones"
+                            value="30%"
+                            readonly
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             VII. ASUETOS
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                VII. Días de Asueto Trabajados
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        ¿Laboró en Días de Asueto?
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="laboro_asueto"
+                                value="si"
+                                onclick="toggleAsuetos()"
+                            >
+
+                            Sí
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="laboro_asueto"
+                                value="no"
+                                checked
+                                onclick="toggleAsuetos()"
+                            >
+
+                            No
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="asuetos-box"
+                class="conditional-box hidden"
+            >
+
+                <p class="help-text">
+                    Seleccione los días de asueto trabajados.
+                </p>
+
+
+                <div class="asuetos-grid">
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="1 de enero — Año Nuevo"
+                        >
+
+                        <span>
+                            1 de enero — Año Nuevo
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="Jueves Santo"
+                        >
+
+                        <span>
+                            Jueves Santo
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="Viernes Santo"
+                        >
+
+                        <span>
+                            Viernes Santo
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="Sábado Santo"
+                        >
+
+                        <span>
+                            Sábado Santo
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="1 de mayo — Día del Trabajo"
+                        >
+
+                        <span>
+                            1 de mayo — Día del Trabajo
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="10 de mayo — Día de la Madre"
+                        >
+
+                        <span>
+                            10 de mayo — Día de la Madre
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="17 de junio — Día del Padre"
+                        >
+
+                        <span>
+                            17 de junio — Día del Padre
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="3 de agosto"
+                        >
+
+                        <span>
+                            3 de agosto
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="5 de agosto"
+                        >
+
+                        <span>
+                            5 de agosto
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="6 de agosto"
+                        >
+
+                        <span>
+                            6 de agosto
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="15 de septiembre — Día de la Independencia"
+                        >
+
+                        <span>
+                            15 de septiembre — Día de la Independencia
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="2 de noviembre — Día de los Difuntos"
+                        >
+
+                        <span>
+                            2 de noviembre — Día de los Difuntos
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="21 de noviembre — Día Festivo / Local Adicional"
+                        >
+
+                        <span>
+                            21 de noviembre — Día Festivo / Local Adicional
+                        </span>
+
+                    </label>
+
+
+                    <label class="asueto-option">
+
+                        <input
+                            type="checkbox"
+                            class="asueto-check"
+                            data-nombre="25 de diciembre — Navidad"
+                        >
+
+                        <span>
+                            25 de diciembre — Navidad
+                        </span>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             VIII. HORAS EXTRAS
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                VIII. Horas Extras No Pagadas y Recargo Nocturno
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        ¿Tiene Horas Extras Pendientes?
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="tiene_extras"
+                                value="si"
+                                onclick="toggleHorasExtras()"
+                            >
+
+                            Sí
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="tiene_extras"
+                                value="no"
+                                checked
+                                onclick="toggleHorasExtras()"
+                            >
+
+                            No
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="extras-box"
+                class="conditional-box hidden"
+            >
+
+                <div id="extras-container"></div>
+
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="agregarHoraExtra()"
+                >
+                    + Agregar registro
+                </button>
+
+
+                <p class="help-text">
+
+                    Horario nocturno de referencia:
+                    7:00 p.m. a 6:00 a.m.
+
+                    <br>
+
+                    Hora extra diurna:
+                    100% de recargo.
+
+                    <br>
+
+                    Hora extra nocturna:
+                    100% de extra + 25% de nocturnidad.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             IX. DEDUCCIONES
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                IX. Deducciones Legales
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label class="radio-label">
+
+                        <input
+                            type="checkbox"
+                            id="aplicar-deducciones"
+                            checked
+                        >
+
+                        Aplicar deducciones obligatorias de ley:
+                        ISSS y AFP sobre las prestaciones
+                        remunerativas correspondientes.
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             BOTÓN
+        ================================================== -->
+
+        <button
+            type="submit"
+            class="btn-submit"
+        >
+            CALCULAR LIQUIDACIÓN
+        </button>
+
+
+    </form>
+
+
+
+    <!-- =====================================================
+         RESULTADO
+    ====================================================== -->
+
+    <div
+        id="result-card"
+        class="hidden"
+    >
+
+        <h3>
+            Resumen del Cálculo
+        </h3>
+
+
+        <div id="result-details"></div>
+
+
+        <div id="alertas"></div>
+
+
+        <button
+            id="pdf-button"
+            class="pdf-button"
+            onclick="generarPDF()"
+        >
+            📄 GENERAR PDF OFICIAL
+        </button>
+
     </div>
 
-    <!-- CAUSA DE TERMINACIÓN -->
-    <div class="section-block">
-      <div class="section-header-banner">
-        III. Causa de Terminación
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Causa Principal</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" name="causa" value="despido" checked onclick="toggleRenunciaBox()">
-              Despido sin causa justificada
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="causa" value="renuncia" onclick="toggleRenunciaBox()">
-              Renuncia Voluntaria
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- RENUNCIA VOLUNTARIA OPCIONES -->
-      <div id="renuncia-box" class="conditional-box hidden">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="cargo-tipo">Tipo de Cargo</label>
-            <select id="cargo-tipo" onchange="updatePreavisoText()">
-              <option value="empleado">Empleado sin jefatura</option>
-              <option value="jefatura">Jefatura / Gerencia / Dirección</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="preaviso">¿Dio Preaviso?</label>
-            <select id="preaviso">
-              <option value="si">Sí, dio preaviso legal</option>
-              <option value="no">No dio preaviso</option>
-            </select>
-          </div>
-        </div>
-        <p id="preaviso-info" style="font-size:0.78rem;color:#6b52ed;font-weight:600;">
-          ℹ Requisito: Notificar con 15 días de anticipación para cargos operativos.
-        </p>
-      </div>
-    </div>
-
-    <!-- VACACIONES Y AGUINALDO -->
-    <div class="section-block">
-      <div class="section-header-banner">
-        IV. Vacaciones y Horas Extras
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Estado Vacaciones</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" name="vacaciones_tipo" value="completas" checked onclick="toggleVacacionesFechas()">
-              Año completado/disfrutado
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="vacaciones_tipo" value="proporcional" onclick="toggleVacacionesFechas()">
-              Pendientes / Proporcionales
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div id="vacaciones-fechas-box" class="conditional-box hidden">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="meses-vacaciones-pendientes">Meses pendientes del ciclo</label>
-            <input type="number" id="meses-vacaciones-pendientes" min="0" max="11" value="0">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row" style="margin-top:15px;">
-        <div class="form-group">
-          <label for="horas-diurnas">Horas Extras Diurnas ($)</label>
-          <input type="number" id="horas-diurnas" step="0.01" min="0" value="0">
-        </div>
-        <div class="form-group">
-          <label for="horas-nocturnas">Horas Extras Nocturnas ($)</label>
-          <input type="number" id="horas-nocturnas" step="0.01" min="0" value="0">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="dias-asueto">Días Asueto ($)</label>
-          <input type="number" id="dias-asueto" step="0.01" min="0" value="0">
-        </div>
-        <div class="form-group">
-          <label for="dias-descanso">Días Descanso ($)</label>
-          <input type="number" id="dias-descanso" step="0.01" min="0" value="0">
-        </div>
-      </div>
-    </div>
-
-    <!-- DEDUCCIONES LEGALES -->
-    <div class="section-block">
-      <div class="section-header-banner">
-        V. Deducciones Legales
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="radio-label">
-            <input type="checkbox" id="aplicar-deducciones" checked>
-            Aplicar deducciones obligatorias de ley: ISSS (3%, tope $30.00), AFP (7.25%) e ISR (Impuesto Sobre la Renta según tabla oficial) sobre prestaciones remunerativas gravadas.
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <button type="submit" class="btn-submit">
-      CALCULAR LIQUIDACIÓN
-    </button>
-  </form>
-
-  <!-- RESULTADO -->
-  <div id="result-card" class="hidden">
-    <h3>Resumen del Cálculo</h3>
-    <div id="result-details"></div>
-    <button id="pdf-button" class="pdf-button" onclick="generarPDF()">
-      📄 GENERAR PDF OFICIAL
-    </button>
-  </div>
 
 </div>
 
-<script>
-  /* =====================================================
-     SUPABASE CLIENT (Disponible para integraciones futuras)
-  ===================================================== */
-  const SUPABASE_URL = "https://jsigzhopcdlreblorjhe.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY";
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let ultimoCalculo = null;
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
 
-  /* =====================================================
-     CÁLCULO AUTOMÁTICO DE TIEMPO
-  ===================================================== */
-  function calcularTiempoAntiguedad() {
-    const fInicio = document.getElementById("fecha-inicio").value;
-    const fFin = document.getElementById("fecha-fin").value;
-    if (!fInicio || !fFin) return;
-
-    const inicio = new Date(fInicio);
-    const fin = new Date(fFin);
-
-    if (fin < inicio) {
-      alert("La fecha de fin debe ser posterior a la fecha de inicio.");
-      return;
-    }
-
-    let anos = fin.getFullYear() - inicio.getFullYear();
-    let meses = fin.getMonth() - inicio.getMonth();
-    let dias = fin.getDate() - inicio.getDate();
-
-    if (dias < 0) {
-      meses--;
-      const ultimoDiaMesAnterior = new Date(fin.getFullYear(), fin.getMonth(), 0).getDate();
-      dias += ultimoDiaMesAnterior;
-    }
-
-    if (meses < 0) {
-      anos--;
-      meses += 12;
-    }
-
-    document.getElementById("anos").value = anos;
-    document.getElementById("meses").value = meses;
-    document.getElementById("dias").value = dias;
-  }
-
-  function toggleRenunciaBox() {
-    const causa = document.querySelector('input[name="causa"]:checked').value;
-    const box = document.getElementById("renuncia-box");
-    if (causa === "renuncia") {
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
-  }
-
-  function updatePreavisoText() {
-    const cargo = document.getElementById("cargo-tipo").value;
-    const infoText = document.getElementById("preaviso-info");
-    if (cargo === "jefatura") {
-      infoText.innerHTML = "ℹ Requisito: Debe notificar con <strong>30 días de anticipación</strong> por cargo de Jefatura/Gerencia.";
-    } else {
-      infoText.innerHTML = "ℹ Requisito: Debe notificar con <strong>15 días de anticipación</strong> para cargos operativos.";
-    }
-  }
-
-  function toggleVacacionesFechas() {
-    const esProporcional = document.querySelector('input[name="vacaciones_tipo"]:checked').value === "proporcional";
-    const box = document.getElementById("vacaciones-fechas-box");
-    if (esProporcional) {
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
-  }
-
-  /* =====================================================
-     CONVERSIÓN DE NÚMEROS A LETRAS (DÓLARES)
-  ===================================================== */
-  function numeroALetras(num) {
-    const enteros = Math.floor(num);
-    const centavos = Math.round((num - enteros) * 100);
-    const centavosTexto = centavos < 10 ? `0${centavos}` : `${centavos}`;
-
-    function Unidades(num) {
-      switch (num) {
-        case 1: return "UN";
-        case 2: return "DOS";
-        case 3: return "TRES";
-        case 4: return "CUATRO";
-        case 5: return "CINCO";
-        case 6: return "SEIS";
-        case 7: return "SIETE";
-        case 8: return "OCHO";
-        case 9: return "NUEVE";
-      }
-      return "";
-    }
-
-    function Decenas(num) {
-      const decena = Math.floor(num / 10);
-      const unidad = num - (decena * 10);
-      switch (decena) {
-        case 1:
-          switch (unidad) {
-            case 0: return "DIEZ";
-            case 1: return "ONCE";
-            case 2: return "DOCE";
-            case 3: return "TREINTA";
-            case 4: return "CATORCE";
-            case 5: return "QUINCE";
-            default: return "DIECI" + Unidades(unidad);
-          }
-        case 2:
-          if (unidad === 0) return "VEINTE";
-          return "VEINTI" + Unidades(unidad);
-        case 3: return DecenasY("TREINTA", unidad);
-        case 4: return DecenasY("CUARENTA", unidad);
-        case 5: return DecenasY("CINCUENTA", unidad);
-        case 6: return DecenasY("SESENTA", unidad);
-        case 7: return DecenasY("SETENTA", unidad);
-        case 8: return DecenasY("OCHENTA", unidad);
-        case 9: return DecenasY("NOVENTA", unidad);
-        case 0: return Unidades(unidad);
-      }
-    }
-
-    function DecenasY(strSin, numUnidad) {
-      if (numUnidad > 0) return strSin + " Y " + Unidades(numUnidad);
-      return strSin;
-    }
-
-    function Centenas(num) {
-      const centenas = Math.floor(num / 100);
-      const decenas = num - (centenas * 100);
-      switch (centenas) {
-        case 1:
-          if (decenas > 0) return "CIENTO " + Decenas(decenas);
-          return "CIEN";
-        case 2: return "DOSCIENTOS " + Decenas(decenas);
-        case 3: return "TRESCIENTOS " + Decenas(decenas);
-        case 4: return "CUATROCIENTOS " + Decenas(decenas);
-        case 5: return "QUINIENTOS " + Decenas(decenas);
-        case 6: return "SEISCIENTOS " + Decenas(decenas);
-        case 7: return "SETECIENTOS " + Decenas(decenas);
-        case 8: return "OCHOCIENTOS " + Decenas(decenas);
-        case 9: return "NOVECIENTOS " + Decenas(decenas);
-      }
-      return Decenas(decenas);
-    }
-
-    function Seccion(num, divisor, strSingular, strPlural) {
-      const cientos = Math.floor(num / divisor);
-      const resto = num - (cientos * divisor);
-      let letras = "";
-      if (cientos > 0) {
-        if (cientos > 1) letras = Centenas(cientos) + " " + strPlural;
-        else letras = strSingular;
-      } else {
-        letras = strSingular;
-      }
-      if (resto > 0) letras += "";
-      return letras;
-    }
-
-    function Miles(num) {
-      const divisor = 1000;
-      const cientos = Math.floor(num / divisor);
-      const resto = num - (cientos * divisor);
-      const strMiles = Seccion(num, divisor, "UN MIL", "MIL");
-      const strCentenas = Centenas(resto);
-      if (strMiles === "") return strCentenas;
-      return strMiles + " " + strCentenas;
-    }
-
-    function Millones(num) {
-      const divisor = 1000000;
-      const cientos = Math.floor(num / divisor);
-      const resto = num - (cientos * divisor);
-      const strMillones = Seccion(num, divisor, "UN MILLON", "MILLONES");
-      const strMiles = Miles(resto);
-      if (strMillones === "") return strMiles;
-      return strMillones + " " + strMiles;
-    }
-
-    if (enteros === 0) return `CERO ${centavosTexto}/100 DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA`;
-    return `${Millones(enteros)} ${centavosTexto}/100 DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA`.trim();
-  }
-
-  /* =====================================================
-     TABLA DE RETENCIÓN DE ISR (EL SALVADOR)
-  ===================================================== */
-  function calcularISR(montoGravableRestaISSSAFP) {
-    let isr = 0;
-    // Tramo I: $0.01 a $472.00 -> Exento
-    if (montoGravableRestaISSSAFP <= 472.00) {
-      isr = 0;
-    } 
-    // Tramo II: $472.01 a $895.24 -> 10% sobre exceso de $472.00 + cuota fija de $17.67
-    else if (montoGravableRestaISSSAFP <= 895.24) {
-      isr = ((montoGravableRestaISSSAFP - 472.00) * 0.10) + 17.67;
-    } 
-    // Tramo III: $895.25 a $2,038.10 -> 20% sobre exceso de $895.24 + cuota fija de $60.00
-    else if (montoGravableRestaISSSAFP <= 2038.10) {
-      isr = ((montoGravableRestaISSSAFP - 895.24) * 0.20) + 60.00;
-    } 
-    // Tramo IV: $2,038.11 en adelante -> 30% sobre exceso de $2,038.10 + cuota fija de $288.57
-    else {
-      isr = ((montoGravableRestaISSSAFP - 2038.10) * 0.30) + 288.57;
-    }
-    return Math.max(0, isr);
-  }
-
-  /* =====================================================
-     CÁLCULO PRINCIPAL
-  ===================================================== */
-  function calculateLiquidacion(e) {
-    e.preventDefault();
-
-    const trabajador = document.getElementById("nombre-trabajador").value.toUpperCase();
-    const duiTrabajador = document.getElementById("dui-trabajador").value;
-    const cargo = document.getElementById("cargo-desempenado").value;
-    const patrono = document.getElementById("nombre-patrono").value;
-    const duiPatrono = document.getElementById("dui-patrono").value || "N/A";
-
-    const salario = parseFloat(document.getElementById("salario").value) || 0;
-    const anos = parseInt(document.getElementById("anos").value) || 0;
-    const meses = parseInt(document.getElementById("meses").value) || 0;
-    const dias = parseInt(document.getElementById("dias").value) || 0;
-
-    const fechaInicio = document.getElementById("fecha-inicio").value;
-    const fechaFin = document.getElementById("fecha-fin").value;
-    const causa = document.querySelector('input[name="causa"]:checked').value;
-    const sector = document.getElementById("sector").value;
-
-    let salarioMinimoMensual = 408.80;
-    if (sector === "maquila") salarioMinimoMensual = 380.00;
-    if (sector === "agropecuario") salarioMinimoMensual = 250.00;
-
-    const salarioDiarioReal = salario / 30;
-    const totalTiempoAnos = anos + (meses / 12) + (dias / 365);
-
-    // 1. Indemnización
-    let indemnizacion = 0;
-    if (causa === "despido") {
-      const salarioMinimoDiario = salarioMinimoMensual / 30;
-      const topeSalarioDiario = salarioMinimoDiario * 4;
-      const salarioDiarioComputable = Math.min(salarioDiarioReal, topeSalarioDiario);
-      indemnizacion = totalTiempoAnos * (salarioDiarioComputable * 30);
-    } else {
-      const cargoTipo = document.getElementById("cargo-tipo").value;
-      const preaviso = document.getElementById("preaviso").value;
-      if (preaviso === "si" && anos >= 2) {
-        const topeSalarioMensualRenuncia = salarioMinimoMensual * 2;
-        const salarioMensualComputable = Math.min(salario, topeSalarioMensualRenuncia);
-        indemnizacion = totalTiempoAnos * ((salarioMensualComputable / 30) * 15);
-      }
-    }
-
-    // 2. Aguinaldo Proporcional
-    let diasAguinaldoBase = 15;
-    if (anos >= 3 && anos < 10) diasAguinaldoBase = 19;
-    else if (anos >= 10) diasAguinaldoBase = 21;
-
-    let pagoAguinaldo = 0;
-    if (fechaFin) {
-      const fin = new Date(fechaFin);
-      const anioFin = fin.getFullYear();
-      let inicioCiclo = new Date(anioFin - 1, 11, 12);
-      if (fin < inicioCiclo) inicioCiclo = new Date(anioFin - 2, 11, 12);
-      const diffTime = Math.max(0, fin - inicioCiclo);
-      const diasTrabajadosAnio = Math.min(365, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-      pagoAguinaldo = ((diasAguinaldoBase * salarioDiarioReal) / 365) * diasTrabajadosAnio;
-    }
-
-    // 3. Vacaciones Proporcionales
-    const esProporcionalVac = document.querySelector('input[name="vacaciones_tipo"]:checked').value === "proporcional";
-    let pagoVacaciones = 0;
-    if (esProporcionalVac) {
-      const mesesVac = parseFloat(document.getElementById("meses-vacaciones-pendientes").value) || 0;
-      const diasVacaciones = (19.5 / 12) * mesesVac;
-      pagoVacaciones = diasVacaciones * salarioDiarioReal;
-    }
-
-    // 4. Horas Extras y Asuetos
-    const horasDiurnas = parseFloat(document.getElementById("horas-diurnas").value) || 0;
-    const horasNocturnas = parseFloat(document.getElementById("horas-nocturnas").value) || 0;
-    const diasAsueto = parseFloat(document.getElementById("dias-asueto").value) || 0;
-    const diasDescanso = parseFloat(document.getElementById("dias-descanso").value) || 0;
-
-    const totalBruto = indemnizacion + pagoAguinaldo + pagoVacaciones + horasDiurnas + horasNocturnas + diasAsueto + diasDescanso;
-
-    // 5. Deducciones de Ley (Remuneración Gravada)
-    // Nota Ley ES: La indemnización y el aguinaldo (hasta límites legales) están exentos
-    const remuneracionGravada = pagoVacaciones + horasDiurnas + horasNocturnas + diasAsueto + diasDescanso;
-    const montoExento = indemnizacion + pagoAguinaldo;
-
-    const aplicarDeducciones = document.getElementById("aplicar-deducciones").checked;
-    let deduccionISSS = 0;
-    let deduccionAFP = 0;
-    let retencionISR = 0;
-
-    if (aplicarDeducciones && remuneracionGravada > 0) {
-      deduccionISSS = Math.min(remuneracionGravada * 0.03, 30.00);
-      deduccionAFP = remuneracionGravada * 0.0725;
-      
-      const baseParaISR = remuneracionGravada - deduccionISSS - deduccionAFP;
-      retencionISR = calcularISR(baseParaISR);
-    }
-
-    const totalDeducciones = deduccionISSS + deduccionAFP + retencionISR;
-    const montoNeto = totalBruto - totalDeducciones;
-
-    // Formatear fechas para mostrar
-    const fIngresoFormatted = formatDate(fechaInicio);
-    const fFinFormatted = formatDate(fechaFin);
-    const ahora = new Date();
-    const fechaGenerado = `${ahora.toLocaleDateString("es-SV")} ${ahora.toLocaleTimeString("es-SV", {hour: '2-digit', minute:'2-digit'})}`;
-
-    ultimoCalculo = {
-      trabajador,
-      duiTrabajador,
-      cargo,
-      patrono,
-      duiPatrono,
-      salario,
-      fIngresoFormatted,
-      fFinFormatted,
-      antiguedadTexto: `${anos} años, ${meses} meses`,
-      causaTexto: causa === "despido" ? "Despido sin causa justificada" : "Renuncia Voluntaria",
-      pagoVacaciones,
-      pagoAguinaldo,
-      indemnizacion,
-      horasDiurnas,
-      horasNocturnas,
-      diasAsueto,
-      diasDescanso,
-      totalBruto,
-      remuneracionGravada,
-      montoExento,
-      deduccionISSS,
-      deduccionAFP,
-      retencionISR,
-      totalDeducciones,
-      montoNeto,
-      montoNetoLetras: numeroALetras(montoNeto),
-      fechaGenerado
-    };
-
-    // Renderizar tarjeta de vista previa
-    const details = document.getElementById("result-details");
-    details.innerHTML = `
-      <p><strong>Trabajador:</strong> ${trabajador} (DUI: ${duiTrabajador})</p>
-      <p><strong>Patrono:</strong> ${patrono}</p>
-      <p><strong>Total Devengado (Bruto):</strong> $${totalBruto.toFixed(2)}</p>
-      <p><strong>Total Deducciones de Ley:</strong> -$${totalDeducciones.toFixed(2)}</p>
-      <h4 style="font-size:1.1rem; color:#15803d; margin-top:8px;">
-        MONTO NETO A PAGAR: $${montoNeto.toFixed(2)} USD
-      </h4>
-      <p style="font-size:0.8rem; color:#555; margin-top:4px;"><em>${ultimoCalculo.montoNetoLetras}</em></p>
-    `;
-
-    document.getElementById("result-card").classList.remove("hidden");
-  }
-
-  function formatDate(dateStr) {
-    if (!dateStr) return "";
-    const parts = dateStr.split("-");
-    const date = new Date(parts[0], parts[1] - 1, parts[2]);
-    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    return `${parts[2]} de ${meses[date.getMonth()]} de ${parts[0]}`;
-  }
-
-  /* =====================================================
-     GENERACIÓN DE PDF EXACTO AL MODELO OFICIAL
-  ===================================================== */
-  function generarPDF() {
-    if (!ultimoCalculo) return;
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const darkBlue = "#1a1b4f";
-
-    // --- PÁGINA 1 ---
-    // Encabezado
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(darkBlue);
-    doc.text("COMPROBANTE DE LIQUIDACION DE PRESTACIONES LABORALES", 105, 15, { align: "center" });
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Republica de El Salvador", 105, 20, { align: "center" });
-
-    // Sección I: Datos de las partes
-    doc.setFillColor(240, 240, 245);
-    doc.rect(14, 25, 182, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(darkBlue);
-    doc.text("I. Datos de las partes", 16, 29.5);
-
-    doc.setFontSize(8.5);
-    doc.setTextColor(0, 0, 0);
-
-    // Fila 1: Persona trabajadora / Patrono
-    doc.setFont("helvetica", "bold");
-    doc.text("Persona trabajadora", 16, 36);
-    doc.text("Patrono", 110, 36);
-    doc.setFont("helvetica", "normal");
-    doc.text(ultimoCalculo.trabajador, 16, 40);
-    doc.text(ultimoCalculo.patrono, 110, 40);
-
-    // Fila 2: Cargo / Salario
-    doc.setFont("helvetica", "bold");
-    doc.text("Cargo desempenado", 16, 46);
-    doc.text("Salario mensual", 110, 46);
-    doc.setFont("helvetica", "normal");
-    doc.text(ultimoCalculo.cargo, 16, 50);
-    doc.text(`$${ultimoCalculo.salario.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 110, 50);
-
-    // Fila 3: Fecha ingreso / Fecha terminacion
-    doc.setFont("helvetica", "bold");
-    doc.text("Fecha de ingreso", 16, 56);
-    doc.text("Fecha de terminacion", 110, 56);
-    doc.setFont("helvetica", "normal");
-    doc.text(ultimoCalculo.fIngresoFormatted, 16, 60);
-    doc.text(ultimoCalculo.fFinFormatted, 110, 60);
-
-    // Fila 4: Antiguedad / Causa
-    doc.setFont("helvetica", "bold");
-    doc.text("Antiguedad reconocida", 16, 66);
-    doc.text("Causa de terminacion", 110, 66);
-    doc.setFont("helvetica", "normal");
-    doc.text(ultimoCalculo.antiguedadTexto, 16, 70);
-    doc.text(ultimoCalculo.causaTexto, 110, 70);
-
-    // Sección II: Desglose de prestaciones liquidadas
-    doc.setFillColor(240, 240, 245);
-    doc.rect(14, 76, 182, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(darkBlue);
-    doc.text("II. Desglose de prestaciones liquidadas", 16, 80.5);
-
-    // Sub-encabezados Tabla
-    doc.setFontSize(8.5);
-    doc.setTextColor(60, 60, 60);
-    doc.text("Concepto", 16, 87);
-    doc.text("Base legal", 85, 87);
-    doc.text("Monto", 185, 87, { align: "right" });
-
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, 88.5, 196, 88.5);
-
-    let y = 93;
-    const addRowP1 = (concepto, baseLegal, monto) => {
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      doc.text(concepto, 16, y);
-      doc.text(baseLegal, 85, y);
-      doc.text(`$${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 185, y, { align: "right" });
-      y += 6;
-    };
-
-    addRowP1("Vacacion proporcional", "Arts. 177 y 187 CT", ultimoCalculo.pagoVacaciones);
-    addRowP1("Aguinaldo proporcional", "Arts. 196-198 CT", ultimoCalculo.pagoAguinaldo);
-    addRowP1("Indemnizacion por despido injustificado", "Art. 58 CT", ultimoCalculo.indemnizacion);
-    addRowP1("Horas extras diurnas", "Art. 169 CT", ultimoCalculo.horasDiurnas);
-    addRowP1("Horas extras nocturnas", "Arts. 168 y 169 CT", ultimoCalculo.horasNocturnas);
-    addRowP1("Dias de asueto laborados", "Art. 192 CT", ultimoCalculo.diasAsueto);
-    addRowP1("Dias de descanso semanal laborados", "Arts. 175 y 176 CT", ultimoCalculo.diasDescanso);
-
-    doc.line(14, y - 2, 196, y - 2);
-    doc.setFont("helvetica", "bold");
-    doc.text("TOTAL DEVENGADO (BRUTO)", 16, y + 2);
-    doc.text(`$${ultimoCalculo.totalBruto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 185, y + 2, { align: "right" });
-
-    // Sección III: Deducciones de ley y neto a pagar
-    y += 10;
-    doc.setFillColor(240, 240, 245);
-    doc.rect(14, y, 182, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(darkBlue);
-    doc.text("III. Deducciones de ley y neto a pagar", 16, y + 4.5);
-
-    y += 10;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(50, 50, 50);
-    doc.text(`Remuneracion gravada: $${ultimoCalculo.remuneracionGravada.toFixed(2)}. Monto exento de ISR y de cotizaciones: $${ultimoCalculo.montoExento.toFixed(2)} (indemnizacion y aguinaldo).`, 16, y);
-
-    y += 6;
-    const addRowDeduc = (concepto, baseLegal, monto) => {
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(8.5);
-      doc.text(concepto, 16, y);
-      doc.text(baseLegal, 85, y);
-      doc.text(`-$${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 185, y, { align: "right" });
-      y += 6;
-    };
-
-    addRowDeduc("Cotizacion ISSS (trabajador)", "Reglamento del ISSS, Art. 29", ultimoCalculo.deduccionISSS);
-    addRowDeduc("Cotizacion AFP (trabajador)", "Ley del Sistema de Ahorro para Pensiones", ultimoCalculo.deduccionAFP);
-    addRowDeduc("Retencion de ISR", "Art. 37 Ley de ISR", ultimoCalculo.retencionISR);
-
-    doc.line(14, y - 2, 196, y - 2);
-    doc.setFont("helvetica", "bold");
-    doc.text("Total de deducciones", 16, y + 2);
-    doc.text(`-$${ultimoCalculo.totalDeducciones.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 185, y + 2, { align: "right" });
-
-    y += 10;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(darkBlue);
-    doc.text("MONTO NETO A PAGAR", 16, y);
-    doc.text(`$${ultimoCalculo.montoNeto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 185, y, { align: "right" });
-
-    y += 8;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(60, 60, 60);
-    doc.text("Monto neto en letras", 16, y);
-
-    y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(0, 0, 0);
-    doc.text(ultimoCalculo.montoNetoLetras, 16, y);
-
-    // Pie de página 1
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Generado el ${ultimoCalculo.fechaGenerado}`, 16, 280);
-    doc.text("1/2", 195, 280, { align: "right" });
-
-    // --- PÁGINA 2 ---
-    doc.addPage();
-
-    // Encabezado P2
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(darkBlue);
-    doc.text("COMPROBANTE DE LIQUIDACION DE PRESTACIONES LABORALES", 105, 15, { align: "center" });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Republica de El Salvador", 105, 20, { align: "center" });
-
-    // Sección IV: Declaración
-    doc.setFillColor(240, 240, 245);
-    doc.rect(14, 25, 182, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(darkBlue);
-    doc.text("IV. Declaracion", 16, 29.5);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(0, 0, 0);
-    const declaracionTexto = `La persona trabajadora ${ultimoCalculo.trabajador} declara haber recibido el detalle de las prestaciones economicas que anteceden, calculadas conforme al Codigo de Trabajo de El Salvador, asi como el desglose de las retenciones de ley aplicadas y el monto neto resultante. Este comprobante se suscribe en la fecha que se indica al pie de las firmas.`;
-    const splitDeclaracion = doc.splitTextToSize(declaracionTexto, 180);
-    doc.text(splitDeclaracion, 16, 37);
-
-    // Firmas
-    let yFirma = 60;
-    doc.setFont("helvetica", "bold");
-    doc.text("Persona trabajadora", 16, yFirma);
-    doc.text("Patrono o representante legal", 110, yFirma);
-
-    yFirma += 6;
-    doc.setFont("helvetica", "normal");
-    doc.text(`Nombre: ${ultimoCalculo.trabajador}`, 16, yFirma);
-    doc.text(`Nombre: ${ultimoCalculo.patrono}`, 110, yFirma);
-
-    yFirma += 6;
-    doc.text(`DUI: ${ultimoCalculo.duiTrabajador}`, 16, yFirma);
-    doc.text(`DUI: ${ultimoCalculo.duiPatrono}`, 110, yFirma);
-
-    yFirma += 6;
-    doc.text("Fecha:", 16, yFirma);
-    doc.text("Fecha:", 110, yFirma);
-
-    // Advertencia legal
-    yFirma += 15;
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(darkBlue);
-    doc.text("Advertencia legal", 16, yFirma);
-
-    yFirma += 4;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(50, 50, 50);
-    const advertenciaTexto = "Este documento es un comprobante informativo del calculo de prestaciones y NO constituye el finiquito laboral. Conforme al Art. 402 inciso 2 del Codigo de Trabajo, la renuncia, la terminacion por mutuo consentimiento o el recibo de pago de prestaciones por despido sin causa legal solo tienen valor probatorio si constan en hojas extendidas por la Direccion General de Inspeccion de Trabajo o por los jueces con competencia en materia laboral, utilizadas dentro de los diez dias siguientes a su expedicion, o bien en documento privado autenticado ante notario. Se recomienda asesoria legal profesional antes de suscribir cualquier finiquito.";
-    const splitAdvertencia = doc.splitTextToSize(advertenciaTexto, 180);
-    doc.text(splitAdvertencia, 16, yFirma);
-
-    // Pie de página 2
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Generado el ${ultimoCalculo.fechaGenerado}`, 16, 280);
-    doc.text("2/2", 195, 280, { align: "right" });
-
-    // Descargar PDF
-    doc.save(`Comprobante_Liquidacion_${ultimoCalculo.trabajador.replace(/\s+/g, "_")}.pdf`);
-  }
-</script>
+<script src="script.js"></script>
 
 </body>
+
 </html>
