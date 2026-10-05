@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -14,23 +15,12 @@
         Calculadora de Prestaciones Laborales - El Salvador
     </title>
 
-    <!-- =====================================================
-         SUPABASE
-    ====================================================== -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
-    <!-- =====================================================
-         JSPDF
-    ====================================================== -->
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-
-    <!-- =====================================================
-         CSS
-    ====================================================== -->
 
     <link
         rel="stylesheet"
@@ -70,10 +60,6 @@
     <hr class="divider-line">
 
 
-    <!-- =====================================================
-         FORMULARIO
-    ====================================================== -->
-
     <form
         id="calc-form"
         onsubmit="calculateLiquidacion(event)"
@@ -102,7 +88,7 @@
                     <input
                         type="text"
                         id="nombre-trabajador"
-                        placeholder="Ej. ROBERTO ALFREDO AGUILAR"
+                        placeholder="Ej. Juan Perez"
                         required
                     >
 
@@ -154,7 +140,7 @@
                     <input
                         type="text"
                         id="nombre-patrono"
-                        placeholder="Ej. Orion Software"
+                        placeholder="Ej. Empresa S.A. de C.V."
                         required
                     >
 
@@ -566,7 +552,6 @@
                                 type="radio"
                                 name="aguinaldo_tipo"
                                 value="completo"
-                                checked
                             >
 
                             Aguinaldo Completo
@@ -580,6 +565,7 @@
                                 type="radio"
                                 name="aguinaldo_tipo"
                                 value="proporcional"
+                                checked
                             >
 
                             Aguinaldo Proporcional
@@ -1023,13 +1009,116 @@
 
 
         <!-- =================================================
-             VIII. HORAS EXTRAS
+             VIII. DÍAS DE DESCANSO SEMANAL
         ================================================== -->
 
         <div class="section-block">
 
             <div class="section-header-banner">
-                VIII. Horas Extras No Pagadas y Recargo Nocturno
+                VIII. Días de Descanso Semanal Laborados
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label>
+                        ¿Laboró en Días de Descanso Semanal?
+                    </label>
+
+
+                    <div class="radio-group">
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="laboro_descanso"
+                                value="si"
+                                onclick="toggleDescansoSemanal()"
+                            >
+
+                            Sí
+
+                        </label>
+
+
+                        <label class="radio-label">
+
+                            <input
+                                type="radio"
+                                name="laboro_descanso"
+                                value="no"
+                                checked
+                                onclick="toggleDescansoSemanal()"
+                            >
+
+                            No
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="descanso-semanal-box"
+                class="conditional-box hidden"
+            >
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="dias-descanso-semanal">
+                            Cantidad de días laborados
+                        </label>
+
+                        <input
+                            type="number"
+                            id="dias-descanso-semanal"
+                            min="0"
+                            step="1"
+                            value="0"
+                            placeholder="Ej. 2"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <p class="help-text">
+                    Indique la cantidad de días de descanso semanal
+                    que fueron laborados durante el período.
+                </p>
+
+
+                <div
+                    id="descanso-semanal-preview"
+                    class="calculation-preview"
+                >
+                    Ingrese la cantidad de días para calcular el monto.
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             IX. HORAS EXTRAS
+        ================================================== -->
+
+        <div class="section-block">
+
+            <div class="section-header-banner">
+                IX. Horas Extras No Pagadas y Recargo Nocturno
             </div>
 
 
@@ -1120,13 +1209,13 @@
 
 
         <!-- =================================================
-             IX. DEDUCCIONES
+             X. DEDUCCIONES
         ================================================== -->
 
         <div class="section-block">
 
             <div class="section-header-banner">
-                IX. Deducciones Legales
+                X. Deducciones Legales
             </div>
 
 
@@ -1157,15 +1246,48 @@
 
 
         <!-- =================================================
-             BOTÓN
+             BOTONES DE ACCIÓN
         ================================================== -->
 
-        <button
-            type="submit"
-            class="btn-submit"
-        >
-            CALCULAR LIQUIDACIÓN
-        </button>
+        <div class="action-buttons">
+
+
+            <button
+                type="submit"
+                class="btn-submit"
+            >
+                CALCULAR LIQUIDACIÓN
+            </button>
+
+
+            <button
+                type="button"
+                class="btn-export"
+                onclick="generarPDF()"
+            >
+                📄 EXPORTAR PDF
+            </button>
+
+
+            <button
+                type="button"
+                class="btn-firma"
+                onclick="generarComprobanteFirma()"
+            >
+                ✍️ COMPROBANTE DE FIRMA
+            </button>
+
+
+            <button
+                type="button"
+                class="btn-limpiar"
+                onclick="limpiarFormulario()"
+            >
+                🗑️ LIMPIAR
+            </button>
+
+
+        </div>
 
 
     </form>
@@ -1192,26 +1314,17 @@
         <div id="alertas"></div>
 
 
-        <button
-            id="pdf-button"
-            class="pdf-button"
-            onclick="generarPDF()"
-        >
-            📄 GENERAR PDF OFICIAL
-        </button>
-
     </div>
 
 
 </div>
 
 
-<!-- =====================================================
-     JAVASCRIPT
-====================================================== -->
 
 <script src="script.js"></script>
+
 
 </body>
 
 </html>
+

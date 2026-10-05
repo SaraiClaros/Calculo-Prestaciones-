@@ -1,3 +1,4 @@
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -181,6 +182,10 @@ body::before {
 }
 
 
+/* =====================================================
+   BOTÓN CALCULAR
+===================================================== */
+
 .btn-submit {
     width: 100%;
     background-color: #1a1b4f;
@@ -246,12 +251,6 @@ body::before {
 .hidden {
     display: none !important;
 }
-
-
-/* =====================================================
-   ELEMENTOS NUEVOS
-   Manteniendo el estilo original
-===================================================== */
 
 
 .info-card {
@@ -413,6 +412,11 @@ body::before {
 }
 
 
+.extra-field input::placeholder {
+    color: #777777;
+}
+
+
 .extra-result {
     margin-top: 8px;
     padding: 7px;
@@ -528,6 +532,139 @@ body::before {
 }
 
 
+/* =====================================================
+   4 BOTONES PRINCIPALES
+   Mismo tamaño + tonalidades de morado
+===================================================== */
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+
+/* Tamaño general de los 4 botones */
+
+.action-buttons button {
+    width: 100%;
+    height: 52px;
+    min-height: 52px;
+    padding: 0 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+
+    font-size: 0.82rem;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    letter-spacing: 0.2px;
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+/* =====================================================
+   1. CALCULAR LIQUIDACIÓN
+===================================================== */
+
+.action-buttons .btn-submit {
+    background-color: #1a1b4f;
+    margin-top: 0;
+}
+
+
+.action-buttons .btn-submit:hover {
+    background-color: #302f70;
+}
+
+
+/* =====================================================
+   2. EXPORTAR PDF
+===================================================== */
+
+.action-buttons .btn-export {
+    background-color: #403477;
+}
+
+
+.action-buttons .btn-export:hover {
+    background-color: #55458d;
+}
+
+
+/* =====================================================
+   3. COMPROBANTE DE FIRMA
+===================================================== */
+
+.action-buttons .btn-firma {
+    background-color: #604a9a;
+}
+
+
+.action-buttons .btn-firma:hover {
+    background-color: #735eaa;
+}
+
+
+/* =====================================================
+   4. LIMPIAR
+===================================================== */
+
+.action-buttons .btn-limpiar {
+    background-color: #8069b5;
+}
+
+
+.action-buttons .btn-limpiar:hover {
+    background-color: #927ec1;
+}
+
+
+/* =====================================================
+   EFECTO GENERAL DE LOS BOTONES
+===================================================== */
+
+.action-buttons button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(26, 27, 79, 0.20);
+}
+
+
+.action-buttons button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 900px) {
+
+    .action-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+
 @media (max-width: 600px) {
 
     .form-row {
@@ -564,4 +701,18 @@ body::before {
         flex-direction: column;
     }
 
+
+    .action-buttons {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+
+    .action-buttons button {
+        width: 100%;
+        height: 52px;
+        min-height: 52px;
+    }
+
 }
+

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Firma - Liquidación Laboral</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #ffffff;
+            color: #111111;
+        }
+        .document {
+            max-width: 850px;
+            margin: auto;
+            border: 1px solid #1a1b4f;
+            padding: 35px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #1a1b4f;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            color: #1a1b4f;
+            font-size: 22px;
+            margin: 0 0 6px;
+        }
+        .header p {
+            margin: 0;
+            color: #444;
+            font-size: 13px;
+        }
+        h2 {
+            color: #1a1b4f;
+            font-size: 15px;
+            margin-top: 25px;
+            border-bottom: 1px solid #c8c1ea;
+            padding-bottom: 6px;
+        }
+        .datos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 25px;
+            font-size: 13px;
+        }
+        .dato strong { color: #1a1b4f; }
+        .monto {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f7fd;
+            border: 1px solid #d2cee7;
+            font-size: 16px;
+            text-align: center;
+        }
+        .declaracion {
+            font-size: 12px;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        .firmas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 70px;
+            margin-top: 80px;
+        }
+        .firma { text-align: center; font-size: 12px; }
+        .linea {
+            border-top: 1px solid #111;
+            padding-top: 8px;
+            margin-bottom: 5px;
+        }
+        .fecha {
+            margin-top: 45px;
+            font-size: 12px;
+        }
+        .acciones {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 25px auto;
+            max-width: 850px;
+        }
+        button {
+            border: none;
+            padding: 11px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #1a1b4f;
+            color: white;
+            font-weight: 700;
+        }
+        @media print {
+            body { padding: 0; }
+            .document { border: none; }
+            .acciones { display: none; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .document { padding: 20px; }
+            .datos, .firmas { grid-template-columns: 1fr; gap: 30px; }
+            .firmas { margin-top: 50px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    <div class="header">
+        <h1>COMPROBANTE DE FIRMA</h1>
+        <p>Liquidación de Prestaciones Laborales — El Salvador</p>
+    </div>
+
+    <h2>I. DATOS DE LAS PARTES</h2>
+    <div class="datos">
+        <div class="dato"><strong>Trabajador(a):</strong> <span id="trabajador">________________</span></div>
+        <div class="dato"><strong>DUI:</strong> <span id="duiTrabajador">________________</span></div>
+        <div class="dato"><strong>Cargo:</strong> <span id="cargo">________________</span></div>
+        <div class="dato"><strong>Patrono / Empresa:</strong> <span id="patrono">________________</span></div>
+        <div class="dato"><strong>DUI Patrono / Rep.:</strong> <span id="duiPatrono">________________</span></div>
+        <div class="dato"><strong>Período:</strong> <span id="periodo">________________</span></div>
+    </div>
+
+    <h2>II. CONSTANCIA DE LIQUIDACIÓN</h2>
+    <div class="monto">
+        <strong>Monto neto a recibir: <span id="neto">$0.00</span></strong>
+        <br><br>
+        <span id="montoLetras"></span>
+    </div>
+
+    <h2>III. DECLARACIÓN</h2>
+    <p class="declaracion">
+        Las partes manifiestan que han recibido y revisado el detalle de la liquidación
+        de prestaciones laborales generado a partir de los datos proporcionados para el
+        cálculo. Las firmas que aparecen en este documento acreditan la revisión y
+        recepción del comprobante, sin perjuicio de los derechos que legalmente
+        correspondan a las partes.
+    </p>
+
+    <div class="firmas">
+        <div class="firma">
+            <div class="linea"></div>
+            <strong id="firmaTrabajador">Trabajador(a)</strong><br>
+            Firma del trabajador(a)
+        </div>
+        <div class="firma">
+            <div class="linea"></div>
+            <strong id="firmaPatrono">Patrono / Representante</strong><br>
+            Firma del patrono / representante
+        </div>
+    </div>
+
+    <div class="fecha">
+        Fecha de firma: __________________________________________
+    </div>
+</div>
+
+<div class="acciones">
+    <button type="button" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+    <button type="button" onclick="window.close()">Cerrar</button>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    function getParam(nombre) {
+        return params.get(nombre) || "";
+    }
+
+    document.getElementById("trabajador").textContent = getParam("trabajador") || "________________";
+    document.getElementById("duiTrabajador").textContent = getParam("duiTrabajador") || "________________";
+    document.getElementById("cargo").textContent = getParam("cargo") || "________________";
+    document.getElementById("patrono").textContent = getParam("patrono") || "________________";
+    document.getElementById("duiPatrono").textContent = getParam("duiPatrono") || "________________";
+
+    const inicio = getParam("fechaInicio");
+    const fin = getParam("fechaFin");
+    document.getElementById("periodo").textContent =
+        inicio && fin ? `${inicio} — ${fin}` : "________________";
+
+    document.getElementById("neto").textContent = getParam("neto") || "$0.00";
+    document.getElementById("montoLetras").textContent = getParam("montoLetras") || "";
+    document.getElementById("firmaTrabajador").textContent = getParam("trabajador") || "Trabajador(a)";
+    document.getElementById("firmaPatrono").textContent = getParam("patrono") || "Patrono / Representante";
+</script>
+
+</body>
+</html>

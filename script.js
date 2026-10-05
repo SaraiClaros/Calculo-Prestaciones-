@@ -8,7 +8,6 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
     "sb_publishable_270tyeyHmNZnVfSMUkt-DA_DqCxn4fY";
 
-
 const supabaseClient =
     window.supabase.createClient(
         SUPABASE_URL,
@@ -19,7 +18,6 @@ const supabaseClient =
 let ultimoCalculo = null;
 
 let contadorHorasExtras = 0;
-
 
 
 /* ==========================================================
@@ -37,7 +35,6 @@ const salariosMinimos = {
     agropecuario: 272.53
 
 };
-
 
 
 /* ==========================================================
@@ -76,7 +73,9 @@ function redondear(valor) {
 function obtenerFecha(fecha) {
 
     if (!fecha) {
+
         return null;
+
     }
 
     const partes = fecha.split("-");
@@ -88,7 +87,6 @@ function obtenerFecha(fecha) {
     );
 
 }
-
 
 
 /* ==========================================================
@@ -110,7 +108,9 @@ function calcularTiempoAntiguedad() {
 
 
     if (!fechaInicio || !fechaFin) {
+
         return;
+
     }
 
 
@@ -129,6 +129,7 @@ function calcularTiempoAntiguedad() {
         );
 
         return;
+
     }
 
 
@@ -189,8 +190,16 @@ function calcularTiempoAntiguedad() {
 
     verificarElegibilidadRenuncia();
 
-}
 
+    /*
+       NUEVO:
+       Determinar automáticamente el tipo
+       de aguinaldo.
+    */
+
+    determinarTipoAguinaldo();
+
+}
 
 
 /* ==========================================================
@@ -232,7 +241,6 @@ function obtenerTiempoTotal() {
 }
 
 
-
 /* ==========================================================
    TOPE
 ========================================================== */
@@ -253,13 +261,20 @@ function actualizarTope() {
         salarioMinimo * 4;
 
 
-    document.getElementById(
-        "tope-indemnizacion"
-    ).innerHTML =
-        `Tope de referencia para indemnización:
-        <strong>${dinero(tope)}</strong>
-        mensuales.`;
+    const elementoTope =
+        document.getElementById(
+            "tope-indemnizacion"
+        );
 
+
+    if (elementoTope) {
+
+        elementoTope.innerHTML =
+            `Tope de referencia para indemnización:
+            <strong>${dinero(tope)}</strong>
+            mensuales.`;
+
+    }
 
 
     const salario =
@@ -274,6 +289,13 @@ function actualizarTope() {
         document.getElementById(
             "salario-alerta"
         );
+
+
+    if (!alerta) {
+
+        return;
+
+    }
 
 
     if (
@@ -305,23 +327,40 @@ function actualizarTope() {
 }
 
 
-
 /* ==========================================================
    RENUNCIA
 ========================================================== */
 
 function toggleRenunciaBox() {
 
-    const causa =
+    const causaSeleccionada =
         document.querySelector(
             'input[name="causa"]:checked'
-        ).value;
+        );
+
+
+    if (!causaSeleccionada) {
+
+        return;
+
+    }
+
+
+    const causa =
+        causaSeleccionada.value;
 
 
     const caja =
         document.getElementById(
             "renuncia-box"
         );
+
+
+    if (!caja) {
+
+        return;
+
+    }
 
 
     if (causa === "renuncia") {
@@ -343,7 +382,6 @@ function toggleRenunciaBox() {
 }
 
 
-
 function updatePreavisoText() {
 
     const tipoCargo =
@@ -356,6 +394,13 @@ function updatePreavisoText() {
         document.getElementById(
             "preaviso-info"
         );
+
+
+    if (!info) {
+
+        return;
+
+    }
 
 
     if (tipoCargo === "jefatura") {
@@ -376,17 +421,29 @@ function updatePreavisoText() {
 }
 
 
-
 function verificarElegibilidadRenuncia() {
 
-    const causa =
+    const causaSeleccionada =
         document.querySelector(
             'input[name="causa"]:checked'
-        )?.value;
+        );
+
+
+    if (!causaSeleccionada) {
+
+        return;
+
+    }
+
+
+    const causa =
+        causaSeleccionada.value;
 
 
     if (causa !== "renuncia") {
+
         return;
+
     }
 
 
@@ -422,6 +479,13 @@ function verificarElegibilidadRenuncia() {
         );
 
 
+    if (!estado) {
+
+        return;
+
+    }
+
+
     if (anos < 2) {
 
         estado.className =
@@ -432,6 +496,7 @@ function verificarElegibilidadRenuncia() {
             "⚠ No cumple con la antigüedad mínima de 2 años indicada para la prestación económica por renuncia.";
 
         return;
+
     }
 
 
@@ -445,6 +510,7 @@ function verificarElegibilidadRenuncia() {
             `⚠ No se acredita el preaviso de ${diasPreaviso} días requerido para este tipo de cargo.`;
 
         return;
+
     }
 
 
@@ -458,6 +524,230 @@ function verificarElegibilidadRenuncia() {
 }
 
 
+/* ==========================================================
+   AGUINALDO
+   NUEVA FUNCIONALIDAD AUTOMÁTICA
+========================================================== */
+
+/*
+   En la reforma aprobada en 2026:
+
+   - El aguinaldo puede pagarse desde el 1 de octubre.
+   - La fecha de referencia para determinar
+     el cálculo proporcional es el 12 de diciembre.
+   - Si el trabajador ya cumple el período
+     correspondiente, se determina como completo.
+   - Si no lo cumple, se calcula proporcional.
+*/
+
+
+function determinarTipoAguinaldo() {
+
+    const fechaInicioElemento =
+        document.getElementById(
+            "fecha-inicio"
+        );
+
+
+    const fechaFinElemento =
+        document.getElementById(
+            "fecha-fin"
+        );
+
+
+    if (
+        !fechaInicioElemento ||
+        !fechaFinElemento
+    ) {
+
+        return;
+
+    }
+
+
+    const fechaInicio =
+        fechaInicioElemento.value;
+
+
+    const fechaFin =
+        fechaFinElemento.value;
+
+
+    if (
+        !fechaInicio ||
+        !fechaFin
+    ) {
+
+        return;
+
+    }
+
+
+    const inicio =
+        obtenerFecha(fechaInicio);
+
+
+    const fin =
+        obtenerFecha(fechaFin);
+
+
+    if (
+        !inicio ||
+        !fin ||
+        fin < inicio
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       El período de referencia del aguinaldo
+       termina el 12 de diciembre.
+    */
+
+    const fechaReferencia =
+        new Date(
+            fin.getFullYear(),
+            11,
+            12
+        );
+
+
+    /*
+       Para determinar si el trabajador
+       completó el período correspondiente,
+       se verifica que haya ingresado
+       a más tardar el 12 de diciembre
+       del año anterior.
+    */
+
+    const inicioPeriodo =
+        new Date(
+            fin.getFullYear() - 1,
+            11,
+            12
+        );
+
+
+    let tipo;
+
+
+    if (
+        inicio <= inicioPeriodo &&
+        fin >= fechaReferencia
+    ) {
+
+        tipo = "completo";
+
+    } else {
+
+        tipo = "proporcional";
+
+    }
+
+
+    /*
+       Actualizar radios si existen.
+    */
+
+    const radioCompleto =
+        document.querySelector(
+            'input[name="aguinaldo_tipo"][value="completo"], input[name="aguinaldo_tipo"][value="completas"]'
+        );
+
+
+    const radioProporcional =
+        document.querySelector(
+            'input[name="aguinaldo_tipo"][value="proporcional"]'
+        );
+
+
+    if (radioCompleto) {
+
+        radioCompleto.checked =
+            tipo === "completo";
+
+    }
+
+
+    if (radioProporcional) {
+
+        radioProporcional.checked =
+            tipo === "proporcional";
+
+    }
+
+
+    /*
+       Mostrar información al usuario.
+    */
+
+    let indicador =
+        document.getElementById(
+            "aguinaldo-automatico"
+        );
+
+
+    if (!indicador) {
+
+        const radio =
+            document.querySelector(
+                'input[name="aguinaldo_tipo"]'
+            );
+
+
+        if (radio) {
+
+            const contenedor =
+                radio.closest(
+                    ".form-group, .radio-group, .section-block"
+                );
+
+
+            if (contenedor) {
+
+                indicador =
+                    document.createElement(
+                        "div"
+                    );
+
+                indicador.id =
+                    "aguinaldo-automatico";
+
+                indicador.className =
+                    "calculation-preview";
+
+                contenedor.appendChild(
+                    indicador
+                );
+
+            }
+
+        }
+
+    }
+
+
+    if (indicador) {
+
+        if (tipo === "completo") {
+
+            indicador.innerHTML =
+                "✓ <strong>Aguinaldo completo:</strong> las fechas ingresadas indican que se cumple el período de referencia.";
+
+        } else {
+
+            indicador.innerHTML =
+                "ℹ <strong>Aguinaldo proporcional:</strong> las fechas ingresadas indican que no se completa el período de referencia.";
+
+        }
+
+    }
+
+}
+
 
 /* ==========================================================
    VACACIONES
@@ -465,10 +755,21 @@ function verificarElegibilidadRenuncia() {
 
 function toggleVacacionesFechas() {
 
-    const tipo =
+    const seleccion =
         document.querySelector(
             'input[name="vacaciones_tipo"]:checked'
-        ).value;
+        );
+
+
+    if (!seleccion) {
+
+        return;
+
+    }
+
+
+    const tipo =
+        seleccion.value;
 
 
     const caja =
@@ -477,22 +778,22 @@ function toggleVacacionesFechas() {
         );
 
 
-    if (tipo === "proporcional") {
+    if (!caja) {
 
-        caja.classList.remove(
-            "hidden"
-        );
-
-    } else {
-
-        caja.classList.remove(
-            "hidden"
-        );
+        return;
 
     }
 
-}
 
+    /*
+       Se conserva la lógica original.
+    */
+
+    caja.classList.remove(
+        "hidden"
+    );
+
+}
 
 
 /* ==========================================================
@@ -501,16 +802,34 @@ function toggleVacacionesFechas() {
 
 function toggleAsuetos() {
 
-    const opcion =
+    const seleccion =
         document.querySelector(
             'input[name="laboro_asueto"]:checked'
-        ).value;
+        );
+
+
+    if (!seleccion) {
+
+        return;
+
+    }
+
+
+    const opcion =
+        seleccion.value;
 
 
     const caja =
         document.getElementById(
             "asuetos-box"
         );
+
+
+    if (!caja) {
+
+        return;
+
+    }
 
 
     if (opcion === "si") {
@@ -532,7 +851,10 @@ function toggleAsuetos() {
             )
             .forEach(
                 checkbox => {
-                    checkbox.checked = false;
+
+                    checkbox.checked =
+                        false;
+
                 }
             );
 
@@ -540,6 +862,141 @@ function toggleAsuetos() {
 
 }
 
+/* ==========================================================
+   DÍAS DE DESCANSO SEMANAL LABORADOS
+========================================================== */
+
+function toggleDescansoSemanal() {
+
+    const seleccion = document.querySelector(
+        'input[name="laboro_descanso"]:checked'
+    );
+
+    if (!seleccion) return;
+
+    const caja = document.getElementById(
+        "descanso-semanal-box"
+    );
+
+    if (!caja) return;
+
+    if (seleccion.value === "si") {
+
+        caja.classList.remove("hidden");
+
+        actualizarDescansoSemanalPreview();
+
+    } else {
+
+        caja.classList.add("hidden");
+
+        const input = document.getElementById(
+            "dias-descanso-semanal"
+        );
+
+        if (input) {
+            input.value = 0;
+        }
+
+        const preview = document.getElementById(
+            "descanso-semanal-preview"
+        );
+
+        if (preview) {
+            preview.textContent =
+                "Ingrese la cantidad de días para calcular el monto.";
+        }
+    }
+}
+
+
+function calcularDescansoSemanal(salario) {
+
+    const seleccion = document.querySelector(
+        'input[name="laboro_descanso"]:checked'
+    );
+
+    if (!seleccion || seleccion.value !== "si") {
+        return {
+            cantidad: 0,
+            monto: 0
+        };
+    }
+
+    const input = document.getElementById(
+        "dias-descanso-semanal"
+    );
+
+    const cantidad = Math.max(
+        0,
+        Math.floor(Number(input?.value) || 0)
+    );
+
+    if (cantidad === 0 || salario <= 0) {
+        return {
+            cantidad: cantidad,
+            monto: 0
+        };
+    }
+
+    const salarioDiario = salario / 30;
+
+    /*
+     * Art. 175 del Código de Trabajo:
+     * trabajo realizado en día de descanso semanal
+     * = salario básico del día + mínimo 50% adicional.
+     */
+    const monto =
+        salarioDiario * 1.50 * cantidad;
+
+    return {
+        cantidad: cantidad,
+        monto: redondear(monto)
+    };
+}
+
+
+function actualizarDescansoSemanalPreview() {
+
+    const salario = numero(
+        document.getElementById("salario")?.value
+    );
+
+    const dias = Math.max(
+        0,
+        Math.floor(
+            Number(
+                document.getElementById(
+                    "dias-descanso-semanal"
+                )?.value
+            ) || 0
+        )
+    );
+
+    const preview = document.getElementById(
+        "descanso-semanal-preview"
+    );
+
+    if (!preview) return;
+
+    if (dias === 0 || salario <= 0) {
+
+        preview.textContent =
+            "Ingrese la cantidad de días para calcular el monto.";
+
+        return;
+    }
+
+    const salarioDiario = salario / 30;
+
+    const monto =
+        salarioDiario * 1.50 * dias;
+
+    preview.textContent =
+        `${dias} día(s) de descanso semanal laborado(s) × ` +
+        `${dinero(salarioDiario)} × 1.50 = ` +
+        `${dinero(monto)}`;
+}
 
 
 /* ==========================================================
@@ -548,16 +1005,34 @@ function toggleAsuetos() {
 
 function toggleHorasExtras() {
 
-    const opcion =
+    const seleccion =
         document.querySelector(
             'input[name="tiene_extras"]:checked'
-        ).value;
+        );
+
+
+    if (!seleccion) {
+
+        return;
+
+    }
+
+
+    const opcion =
+        seleccion.value;
 
 
     const caja =
         document.getElementById(
             "extras-box"
         );
+
+
+    if (!caja) {
+
+        return;
+
+    }
 
 
     if (opcion === "si") {
@@ -584,14 +1059,354 @@ function toggleHorasExtras() {
         );
 
 
-        document.getElementById(
-            "extras-container"
-        ).innerHTML = "";
+        const container =
+            document.getElementById(
+                "extras-container"
+            );
+
+
+        if (container) {
+
+            container.innerHTML = "";
+
+        }
+
+
+        contadorHorasExtras = 0;
 
     }
 
 }
 
+
+/* ==========================================================
+   PARSEAR HORA ESCRITA
+========================================================== */
+
+/*
+   Acepta ejemplos como:
+
+   8:00 AM
+   08:00 AM
+   8 AM
+   8:30 PM
+   11:45 PM
+
+   También acepta:
+
+   08:00
+   20:00
+
+   Pero la interfaz está pensada
+   principalmente para AM / PM.
+*/
+
+function convertirHora(hora) {
+
+    if (!hora) {
+
+        return null;
+
+    }
+
+
+    let texto =
+        String(hora)
+            .trim()
+            .toUpperCase()
+            .replace(/\./g, "");
+
+
+    /*
+       Detectar AM / PM
+    */
+
+    let periodo = null;
+
+
+    if (
+        texto.endsWith("AM")
+    ) {
+
+        periodo = "AM";
+
+        texto =
+            texto
+                .slice(0, -2)
+                .trim();
+
+    } else if (
+        texto.endsWith("PM")
+    ) {
+
+        periodo = "PM";
+
+        texto =
+            texto
+                .slice(0, -2)
+                .trim();
+
+    }
+
+
+    /*
+       Separar horas y minutos.
+    */
+
+    let horas;
+    let minutos;
+
+
+    if (
+        texto.includes(":")
+    ) {
+
+        const partes =
+            texto.split(":");
+
+
+        horas =
+            Number(
+                partes[0]
+            );
+
+
+        minutos =
+            Number(
+                partes[1]
+            );
+
+    } else {
+
+        horas =
+            Number(texto);
+
+        minutos = 0;
+
+    }
+
+
+    if (
+        !Number.isFinite(horas) ||
+        !Number.isFinite(minutos)
+    ) {
+
+        return null;
+
+    }
+
+
+    /*
+       Validar minutos.
+    */
+
+    if (
+        minutos < 0 ||
+        minutos > 59
+    ) {
+
+        return null;
+
+    }
+
+
+    /*
+       Si se escribió AM / PM.
+    */
+
+    if (periodo === "AM") {
+
+        if (horas === 12) {
+
+            horas = 0;
+
+        }
+
+    } else if (
+        periodo === "PM"
+    ) {
+
+        if (horas !== 12) {
+
+            horas += 12;
+
+        }
+
+    }
+
+
+    /*
+       Si no escribió AM / PM,
+       aceptar formato de 24 horas.
+    */
+
+    if (
+        periodo === null &&
+        (horas < 0 || horas > 23)
+    ) {
+
+        return null;
+
+    }
+
+
+    if (
+        horas < 0 ||
+        horas > 23
+    ) {
+
+        return null;
+
+    }
+
+
+    return (
+        horas +
+        minutos / 60
+    );
+
+}
+
+
+/* ==========================================================
+   FORMATEAR HORA
+========================================================== */
+
+function formatearHora(hora) {
+
+    const valor =
+        convertirHora(hora);
+
+
+    if (
+        valor === null
+    ) {
+
+        return "";
+
+    }
+
+
+    let horas =
+        Math.floor(valor);
+
+
+    const minutos =
+        Math.round(
+            (valor - horas) * 60
+        );
+
+
+    const periodo =
+        horas >= 12
+            ? "PM"
+            : "AM";
+
+
+    let horas12 =
+        horas % 12;
+
+
+    if (horas12 === 0) {
+
+        horas12 = 12;
+
+    }
+
+
+    return (
+        String(horas12) +
+        ":" +
+        String(minutos).padStart(2, "0") +
+        " " +
+        periodo
+    );
+
+}
+
+
+/* ==========================================================
+   DETERMINAR SI ES HORARIO NOCTURNO
+========================================================== */
+
+/*
+   Jornada nocturna:
+   desde las 7:00 PM hasta antes de las 6:00 AM.
+*/
+
+function esHoraNocturna(hora) {
+
+    const valor =
+        typeof hora === "number"
+            ? hora
+            : convertirHora(hora);
+
+
+    if (
+        valor === null
+    ) {
+
+        return false;
+
+    }
+
+
+    return (
+        valor >= 19 ||
+        valor < 6
+    );
+
+}
+
+
+/* ==========================================================
+   DETERMINAR TIPO DE JORNADA
+========================================================== */
+
+function determinarTipoJornada(
+    inicio,
+    fin
+) {
+
+    const horaInicio =
+        convertirHora(inicio);
+
+
+    const horaFin =
+        convertirHora(fin);
+
+
+    if (
+        horaInicio === null ||
+        horaFin === null
+    ) {
+
+        return null;
+
+    }
+
+
+    /*
+       Si el intervalo cruza la noche,
+       se considera nocturno.
+
+       Ejemplo:
+       6:00 PM - 10:00 PM
+    */
+
+    if (
+        esHoraNocturna(horaInicio) ||
+        esHoraNocturna(horaFin)
+    ) {
+
+        return "nocturna";
+
+    }
+
+
+    return "diurna";
+
+}
 
 
 /* ==========================================================
@@ -611,6 +1426,13 @@ function agregarHoraExtra() {
         document.getElementById(
             "extras-container"
         );
+
+
+    if (!container) {
+
+        return;
+
+    }
 
 
     const fila =
@@ -653,8 +1475,11 @@ function agregarHoraExtra() {
                 </label>
 
                 <input
-                    type="time"
+                    type="text"
                     class="extra-inicio"
+                    placeholder="Ej. 8:00 AM"
+                    autocomplete="off"
+                    oninput="actualizarFilaExtra(this)"
                     onchange="actualizarFilaExtra(this)"
                 >
 
@@ -668,8 +1493,11 @@ function agregarHoraExtra() {
                 </label>
 
                 <input
-                    type="time"
+                    type="text"
                     class="extra-fin"
+                    placeholder="Ej. 5:00 PM"
+                    autocomplete="off"
+                    oninput="actualizarFilaExtra(this)"
                     onchange="actualizarFilaExtra(this)"
                 >
 
@@ -679,7 +1507,7 @@ function agregarHoraExtra() {
 
 
         <div class="extra-result">
-            Complete los datos para determinar el tipo de hora.
+            Escriba la hora de inicio y final con AM o PM para determinar automáticamente si corresponde a horario diurno o nocturno.
         </div>
 
 
@@ -701,46 +1529,6 @@ function agregarHoraExtra() {
 }
 
 
-
-/* ==========================================================
-   HORARIO NOCTURNO
-========================================================== */
-
-function convertirHora(hora) {
-
-    if (!hora) {
-        return 0;
-    }
-
-
-    const partes =
-        hora.split(":");
-
-
-    return (
-        Number(partes[0]) +
-        Number(partes[1]) / 60
-    );
-
-}
-
-
-
-function esHoraNocturna(hora) {
-
-    const valor =
-        convertirHora(hora);
-
-
-    return (
-        valor >= 19 ||
-        valor < 6
-    );
-
-}
-
-
-
 /* ==========================================================
    ACTUALIZAR HORA EXTRA
 ========================================================== */
@@ -751,6 +1539,13 @@ function actualizarFilaExtra(elemento) {
         elemento.closest(
             ".extra-row"
         );
+
+
+    if (!fila) {
+
+        return;
+
+    }
 
 
     const inicio =
@@ -771,25 +1566,51 @@ function actualizarFilaExtra(elemento) {
         );
 
 
-    if (!inicio || !fin) {
+    if (
+        !inicio ||
+        !fin
+    ) {
 
         resultado.textContent =
-            "Complete el horario para determinar el tipo.";
+            "Complete la hora de inicio y final.";
 
         return;
 
     }
 
 
-    let horaInicio =
+    const horaInicio =
         convertirHora(inicio);
 
 
-    let horaFin =
+    const horaFinOriginal =
         convertirHora(fin);
 
 
-    if (horaFin <= horaInicio) {
+    if (
+        horaInicio === null ||
+        horaFinOriginal === null
+    ) {
+
+        resultado.innerHTML =
+            "⚠ Formato inválido. Ejemplo: <strong>8:00 AM</strong> o <strong>10:30 PM</strong>.";
+
+        return;
+
+    }
+
+
+    let horaFin =
+        horaFinOriginal;
+
+
+    /*
+       Si termina al día siguiente.
+    */
+
+    if (
+        horaFin <= horaInicio
+    ) {
 
         horaFin += 24;
 
@@ -797,10 +1618,13 @@ function actualizarFilaExtra(elemento) {
 
 
     const horas =
-        horaFin - horaInicio;
+        horaFin -
+        horaInicio;
 
 
-    if (horas <= 0) {
+    if (
+        horas <= 0
+    ) {
 
         resultado.textContent =
             "Horario inválido.";
@@ -810,29 +1634,74 @@ function actualizarFilaExtra(elemento) {
     }
 
 
-    const nocturna =
-        esHoraNocturna(inicio) ||
-        esHoraNocturna(fin);
+    /*
+       Determinar si el período toca
+       horario nocturno.
+    */
+
+    let nocturna = false;
+
+
+    /*
+       Revisar cada fracción de hora
+       del intervalo.
+    */
+
+    const minutosTotales =
+        Math.ceil(
+            horas * 60
+        );
+
+
+    for (
+        let minuto = 0;
+        minuto <= minutosTotales;
+        minuto += 30
+    ) {
+
+        const momento =
+            (
+                horaInicio +
+                minuto / 60
+            ) % 24;
+
+
+        if (
+            esHoraNocturna(momento)
+        ) {
+
+            nocturna = true;
+
+            break;
+
+        }
+
+    }
+
+
+    const tipo =
+        nocturna
+            ? "Hora Extra Nocturna"
+            : "Hora Extra Diurna";
 
 
     if (nocturna) {
 
         resultado.innerHTML =
-            `<strong>Hora Extra Nocturna</strong> —
+            `<strong>${tipo}</strong> —
             ${horas.toFixed(2)} horas —
-            Recargo extra + nocturnidad`;
+            Se detectó horario nocturno.`;
 
     } else {
 
         resultado.innerHTML =
-            `<strong>Hora Extra Diurna</strong> —
+            `<strong>${tipo}</strong> —
             ${horas.toFixed(2)} horas —
-            Recargo del 100%`;
+            Se detectó horario diurno.`;
 
     }
 
 }
-
 
 
 /* ==========================================================
@@ -858,19 +1727,19 @@ function calcularHorasExtras(
                 const fecha =
                     fila.querySelector(
                         ".extra-fecha"
-                    ).value;
+                    )?.value;
 
 
                 const inicio =
                     fila.querySelector(
                         ".extra-inicio"
-                    ).value;
+                    )?.value;
 
 
                 const fin =
                     fila.querySelector(
                         ".extra-fin"
-                    ).value;
+                    )?.value;
 
 
                 if (
@@ -884,21 +1753,34 @@ function calcularHorasExtras(
                 }
 
 
-                let horaInicio =
+                const horaInicio =
                     convertirHora(
                         inicio
                     );
 
 
-                let horaFin =
+                const horaFinOriginal =
                     convertirHora(
                         fin
                     );
 
 
                 if (
-                    horaFin <=
-                    horaInicio
+                    horaInicio === null ||
+                    horaFinOriginal === null
+                ) {
+
+                    return;
+
+                }
+
+
+                let horaFin =
+                    horaFinOriginal;
+
+
+                if (
+                    horaFin <= horaInicio
                 ) {
 
                     horaFin += 24;
@@ -911,19 +1793,61 @@ function calcularHorasExtras(
                     horaInicio;
 
 
-                if (horas <= 0) {
+                if (
+                    horas <= 0
+                ) {
+
                     return;
+
                 }
 
 
-                const nocturna =
-                    esHoraNocturna(
-                        inicio
-                    ) ||
-                    esHoraNocturna(
-                        fin
+                /*
+                   Determinar si alguna parte
+                   del período cae en horario nocturno.
+                */
+
+                let nocturna = false;
+
+
+                const minutosTotales =
+                    Math.ceil(
+                        horas * 60
                     );
 
+
+                for (
+                    let minuto = 0;
+                    minuto <= minutosTotales;
+                    minuto += 30
+                ) {
+
+                    const momento =
+                        (
+                            horaInicio +
+                            minuto / 60
+                        ) % 24;
+
+
+                    if (
+                        esHoraNocturna(
+                            momento
+                        )
+                    ) {
+
+                        nocturna = true;
+
+                        break;
+
+                    }
+
+                }
+
+
+                /*
+                   Multiplicadores originales
+                   conservados.
+                */
 
                 const multiplicador =
                     nocturna
@@ -932,8 +1856,8 @@ function calcularHorasExtras(
 
 
                 /*
-                    Salario mensual / 30 / 8
-                    = valor de hora ordinaria
+                   Salario mensual / 30 / 8
+                   = valor de hora ordinaria.
                 */
 
                 const valorHora =
@@ -959,12 +1883,27 @@ function calcularHorasExtras(
 
                     fin,
 
+                    inicioFormateado:
+                        formatearHora(
+                            inicio
+                        ),
+
+                    finFormateado:
+                        formatearHora(
+                            fin
+                        ),
+
                     horas,
 
                     tipo:
                         nocturna
                             ? "Hora Extra Nocturna"
                             : "Hora Extra Diurna",
+
+                    jornada:
+                        nocturna
+                            ? "Nocturna"
+                            : "Diurna",
 
                     monto
 
@@ -984,7 +1923,6 @@ function calcularHorasExtras(
     };
 
 }
-
 
 
 /* ==========================================================
@@ -1012,7 +1950,9 @@ function calcularIndemnizacion(
        DESPIDO
     */
 
-    if (causa === "despido") {
+    if (
+        causa === "despido"
+    ) {
 
         const salarioComputable =
             Math.min(
@@ -1122,9 +2062,8 @@ function calcularIndemnizacion(
 }
 
 
-
 /* ==========================================================
-   AGUINALDO
+   ISR
 ========================================================== */
 
 function calcularISR(
@@ -1134,18 +2073,24 @@ function calcularISR(
     let isr = 0;
 
 
-    if (monto <= 472) {
+    if (
+        monto <= 472
+    ) {
 
         isr = 0;
 
-    } else if (monto <= 895.24) {
+    } else if (
+        monto <= 895.24
+    ) {
 
         isr =
             (monto - 472) *
             0.10 +
             17.67;
 
-    } else if (monto <= 2038.10) {
+    } else if (
+        monto <= 2038.10
+    ) {
 
         isr =
             (monto - 895.24) *
@@ -1170,6 +2115,9 @@ function calcularISR(
 }
 
 
+/* ==========================================================
+   AGUINALDO
+========================================================== */
 
 function calcularAguinaldo(
     salario,
@@ -1183,6 +2131,13 @@ function calcularAguinaldo(
         );
 
 
+    if (!fecha) {
+
+        return 0;
+
+    }
+
+
     const anos =
         Math.floor(
             tiempo
@@ -1192,11 +2147,15 @@ function calcularAguinaldo(
     let diasBase;
 
 
-    if (anos >= 10) {
+    if (
+        anos >= 10
+    ) {
 
         diasBase = 21;
 
-    } else if (anos >= 3) {
+    } else if (
+        anos >= 3
+    ) {
 
         diasBase = 19;
 
@@ -1211,20 +2170,94 @@ function calcularAguinaldo(
         salario / 30;
 
 
-    const tipo =
+    /*
+       Obtener el tipo automático.
+    */
+
+    let tipo =
+        null;
+
+
+    const radio =
         document.querySelector(
             'input[name="aguinaldo_tipo"]:checked'
-        ).value;
+        );
+
+
+    if (radio) {
+
+        tipo =
+            radio.value;
+
+    }
 
 
     /*
-       Aguinaldo proporcional
+       Si no existe radio o no está seleccionado,
+       determinarlo automáticamente.
+    */
+
+    if (
+        !tipo
+    ) {
+
+        const fechaInicio =
+            document.getElementById(
+                "fecha-inicio"
+            ).value;
+
+
+        const inicio =
+            obtenerFecha(
+                fechaInicio
+            );
+
+
+        const inicioPeriodo =
+            new Date(
+                fecha.getFullYear() - 1,
+                11,
+                12
+            );
+
+
+        const fechaReferencia =
+            new Date(
+                fecha.getFullYear(),
+                11,
+                12
+            );
+
+
+        if (
+            inicio <= inicioPeriodo &&
+            fecha >= fechaReferencia
+        ) {
+
+            tipo = "completo";
+
+        } else {
+
+            tipo = "proporcional";
+
+        }
+
+    }
+
+
+    /*
+       Aguinaldo proporcional.
     */
 
     if (
         tipo === "proporcional" ||
         tiempo < 1
     ) {
+
+        /*
+           El período inicia el 12 de diciembre
+           del año anterior.
+        */
 
         let inicioPeriodo =
             new Date(
@@ -1233,6 +2266,12 @@ function calcularAguinaldo(
                 12
             );
 
+
+        /*
+           Si la fecha de terminación es anterior
+           al 12 de diciembre, se usa el período
+           anterior correspondiente.
+        */
 
         if (
             fecha <
@@ -1279,13 +2318,16 @@ function calcularAguinaldo(
     }
 
 
+    /*
+       Aguinaldo completo.
+    */
+
     return redondear(
         salarioDiario *
         diasBase
     );
 
 }
-
 
 
 /* ==========================================================
@@ -1296,10 +2338,31 @@ function calcularVacaciones(
     salario
 ) {
 
-    const tipo =
+    const radio =
         document.querySelector(
             'input[name="vacaciones_tipo"]:checked'
-        ).value;
+        );
+
+
+    if (!radio) {
+
+        return {
+
+            dias: 0,
+
+            base: 0,
+
+            recargo: 0,
+
+            monto: 0
+
+        };
+
+    }
+
+
+    const tipo =
+        radio.value;
 
 
     const salarioDiario =
@@ -1310,7 +2373,9 @@ function calcularVacaciones(
        15 días + 30%
     */
 
-    if (tipo === "completas") {
+    if (
+        tipo === "completas"
+    ) {
 
         const base =
             salarioDiario *
@@ -1333,7 +2398,8 @@ function calcularVacaciones(
 
             monto:
                 redondear(
-                    base + recargo
+                    base +
+                    recargo
                 )
 
         };
@@ -1376,13 +2442,13 @@ function calcularVacaciones(
 
         monto:
             redondear(
-                base + recargo
+                base +
+                recargo
             )
 
     };
 
 }
-
 
 
 /* ==========================================================
@@ -1393,13 +2459,34 @@ function calcularAsuetos(
     salario
 ) {
 
-    const opcion =
+    const radio =
         document.querySelector(
             'input[name="laboro_asueto"]:checked'
-        ).value;
+        );
 
 
-    if (opcion !== "si") {
+    if (!radio) {
+
+        return {
+
+            cantidad: 0,
+
+            monto: 0,
+
+            dias: []
+
+        };
+
+    }
+
+
+    const opcion =
+        radio.value;
+
+
+    if (
+        opcion !== "si"
+    ) {
 
         return {
 
@@ -1427,8 +2514,7 @@ function calcularAsuetos(
 
 
     /*
-       Pago del día + 100% de recargo
-       = 200%
+       Pago del día + 100% de recargo.
     */
 
     const montoPorDia =
@@ -1455,7 +2541,6 @@ function calcularAsuetos(
     };
 
 }
-
 
 
 /* ==========================================================
@@ -1516,9 +2601,7 @@ function calcularDeducciones(
 
 
     /*
-       ISR:
-       Se calcula sobre la base
-       después de ISSS y AFP.
+       ISR
     */
 
     const baseISR =
@@ -1558,7 +2641,6 @@ function calcularDeducciones(
 }
 
 
-
 /* ==========================================================
    NÚMERO A LETRAS
 ========================================================== */
@@ -1589,25 +2671,45 @@ function numeroALetras(
     const unidades = [
 
         "",
+
         "UNO",
+
         "DOS",
+
         "TRES",
+
         "CUATRO",
+
         "CINCO",
+
         "SEIS",
+
         "SIETE",
+
         "OCHO",
+
         "NUEVE",
+
         "DIEZ",
+
         "ONCE",
+
         "DOCE",
+
         "TRECE",
+
         "CATORCE",
+
         "QUINCE",
+
         "DIECISÉIS",
+
         "DIECISIETE",
+
         "DIECIOCHO",
+
         "DIECINUEVE",
+
         "VEINTE"
 
     ];
@@ -1616,14 +2718,23 @@ function numeroALetras(
     const decenas = [
 
         "",
+
         "",
+
         "VEINTE",
+
         "TREINTA",
+
         "CUARENTA",
+
         "CINCUENTA",
+
         "SESENTA",
+
         "SETENTA",
+
         "OCHENTA",
+
         "NOVENTA"
 
     ];
@@ -1631,14 +2742,18 @@ function numeroALetras(
 
     function menor100(n) {
 
-        if (n <= 20) {
+        if (
+            n <= 20
+        ) {
 
             return unidades[n];
 
         }
 
 
-        if (n < 30) {
+        if (
+            n < 30
+        ) {
 
             return (
                 "VEINTI" +
@@ -1675,14 +2790,18 @@ function numeroALetras(
 
     function menor1000(n) {
 
-        if (n < 100) {
+        if (
+            n < 100
+        ) {
 
             return menor100(n);
 
         }
 
 
-        if (n === 100) {
+        if (
+            n === 100
+        ) {
 
             return "CIEN";
 
@@ -1692,14 +2811,23 @@ function numeroALetras(
         const centenas = [
 
             "",
+
             "CIENTO",
+
             "DOSCIENTOS",
+
             "TRESCIENTOS",
+
             "CUATROCIENTOS",
+
             "QUINIENTOS",
+
             "SEISCIENTOS",
+
             "SETECIENTOS",
+
             "OCHOCIENTOS",
+
             "NOVECIENTOS"
 
         ];
@@ -1730,21 +2858,27 @@ function numeroALetras(
 
     function convertir(n) {
 
-        if (n === 0) {
+        if (
+            n === 0
+        ) {
 
             return "CERO";
 
         }
 
 
-        if (n < 1000) {
+        if (
+            n < 1000
+        ) {
 
             return menor1000(n);
 
         }
 
 
-        if (n < 1000000) {
+        if (
+            n < 1000000
+        ) {
 
             const miles =
                 Math.floor(
@@ -1763,7 +2897,9 @@ function numeroALetras(
                       " MIL";
 
 
-            if (resto) {
+            if (
+                resto
+            ) {
 
                 texto +=
                     " " +
@@ -1796,7 +2932,9 @@ function numeroALetras(
                   " MILLONES";
 
 
-        if (resto) {
+        if (
+            resto
+        ) {
 
             texto +=
                 " " +
@@ -1827,7 +2965,6 @@ function numeroALetras(
 }
 
 
-
 /* ==========================================================
    FORMATO FECHA
 ========================================================== */
@@ -1837,7 +2974,9 @@ function formatDate(
 ) {
 
     if (!dateStr) {
+
         return "";
+
     }
 
 
@@ -1859,7 +2998,6 @@ function formatDate(
 }
 
 
-
 /* ==========================================================
    CÁLCULO PRINCIPAL
 ========================================================== */
@@ -1868,7 +3006,11 @@ function calculateLiquidacion(
     event
 ) {
 
-    event.preventDefault();
+    if (event) {
+
+        event.preventDefault();
+
+    }
 
 
     const salario =
@@ -1917,7 +3059,9 @@ function calculateLiquidacion(
         );
 
 
-    if (fin < inicio) {
+    if (
+        fin < inicio
+    ) {
 
         alert(
             "La fecha de terminación no puede ser anterior a la fecha de ingreso."
@@ -1929,6 +3073,14 @@ function calculateLiquidacion(
 
 
     calcularTiempoAntiguedad();
+
+
+    /*
+       Determinar automáticamente
+       el tipo de aguinaldo.
+    */
+
+    determinarTipoAguinaldo();
 
 
     const anos =
@@ -1961,17 +3113,22 @@ function calculateLiquidacion(
         dias / 365;
 
 
-    const causa =
+    const causaElemento =
         document.querySelector(
             'input[name="causa"]:checked'
-        ).value;
+        );
+
+
+    const causa =
+        causaElemento
+            ? causaElemento.value
+            : "despido";
 
 
     const sector =
         document.getElementById(
             "sector"
         ).value;
-
 
 
     /* =====================================================
@@ -1987,7 +3144,6 @@ function calculateLiquidacion(
         );
 
 
-
     /* =====================================================
        AGUINALDO
     ====================================================== */
@@ -2000,7 +3156,6 @@ function calculateLiquidacion(
         );
 
 
-
     /* =====================================================
        VACACIONES
     ====================================================== */
@@ -2009,7 +3164,6 @@ function calculateLiquidacion(
         calcularVacaciones(
             salario
         );
-
 
 
     /* =====================================================
@@ -2022,6 +3176,15 @@ function calculateLiquidacion(
         );
 
 
+    /* =====================================================
+       DÍAS DE DESCANSO SEMANAL LABORADOS
+    ====================================================== */
+
+    const descansoSemanal =
+        calcularDescansoSemanal(
+            salario
+        );
+
 
     /* =====================================================
        HORAS EXTRAS
@@ -2031,7 +3194,6 @@ function calculateLiquidacion(
         calcularHorasExtras(
             salario
         );
-
 
 
     /* =====================================================
@@ -2049,10 +3211,11 @@ function calculateLiquidacion(
 
             asuetos.monto +
 
+            descansoSemanal.monto +
+
             horasExtras.total
 
         );
-
 
 
     /* =====================================================
@@ -2068,20 +3231,27 @@ function calculateLiquidacion(
 
             asuetos.monto +
 
+            descansoSemanal.monto +
+
             horasExtras.total
 
         );
-
 
 
     /* =====================================================
        DEDUCCIONES
     ====================================================== */
 
-    const aplicarDeducciones =
+    const checkboxDeducciones =
         document.getElementById(
             "aplicar-deducciones"
-        ).checked;
+        );
+
+
+    const aplicarDeducciones =
+        checkboxDeducciones
+            ? checkboxDeducciones.checked
+            : false;
 
 
     const deducciones =
@@ -2089,7 +3259,6 @@ function calculateLiquidacion(
             baseCotizable,
             aplicarDeducciones
         );
-
 
 
     /* =====================================================
@@ -2102,6 +3271,21 @@ function calculateLiquidacion(
             deducciones.total
         );
 
+
+    /* =====================================================
+       TIPO DE AGUINALDO
+    ====================================================== */
+
+    const radioAguinaldo =
+        document.querySelector(
+            'input[name="aguinaldo_tipo"]:checked'
+        );
+
+
+    const tipoAguinaldo =
+        radioAguinaldo
+            ? radioAguinaldo.value
+            : "proporcional";
 
 
     /* =====================================================
@@ -2151,6 +3335,8 @@ function calculateLiquidacion(
 
         causa,
 
+        tipoAguinaldo,
+
         indemnizacion:
             indemnizacion.monto,
 
@@ -2176,6 +3362,12 @@ function calculateLiquidacion(
 
         asuetosDias:
             asuetos.dias,
+
+        descansoSemanal:
+            descansoSemanal.monto,
+
+        descansoSemanalCantidad:
+            descansoSemanal.cantidad,
 
         horasExtras:
             horasExtras.total,
@@ -2209,11 +3401,9 @@ function calculateLiquidacion(
     };
 
 
-
     mostrarResultado();
 
 }
-
 
 
 /* ==========================================================
@@ -2238,10 +3428,23 @@ function mostrarResultado() {
         );
 
 
+    if (
+        !resultCard ||
+        !resultDetails
+    ) {
+
+        return;
+
+    }
+
+
+    const textoTipoAguinaldo =
+        data.tipoAguinaldo === "completo"
+            ? "Completo"
+            : "Proporcional";
+
+
     resultDetails.innerHTML = `
-
-
-        <!-- DATOS -->
 
         <div class="result-section">
 
@@ -2321,9 +3524,6 @@ function mostrarResultado() {
         </div>
 
 
-
-        <!-- PRESTACIONES -->
-
         <div class="result-section">
 
             <h4>
@@ -2348,6 +3548,7 @@ function mostrarResultado() {
 
                 <span>
                     Aguinaldo
+                    (${textoTipoAguinaldo})
                 </span>
 
                 <strong>
@@ -2386,6 +3587,20 @@ function mostrarResultado() {
             <div class="result-line">
 
                 <span>
+                    Días de descanso semanal laborados
+                    (${data.descansoSemanalCantidad || 0} día(s))
+                </span>
+
+                <strong>
+                    ${dinero(data.descansoSemanal || 0)}
+                </strong>
+
+            </div>
+
+
+            <div class="result-line">
+
+                <span>
                     Horas extras / nocturnidad
                 </span>
 
@@ -2410,9 +3625,6 @@ function mostrarResultado() {
 
         </div>
 
-
-
-        <!-- DEDUCCIONES -->
 
         <div class="result-section">
 
@@ -2500,7 +3712,6 @@ function mostrarResultado() {
 
         </div>
 
-
     `;
 
 
@@ -2519,7 +3730,6 @@ function mostrarResultado() {
 }
 
 
-
 /* ==========================================================
    ALERTAS
 ========================================================== */
@@ -2536,6 +3746,13 @@ function mostrarAlertas() {
         );
 
 
+    if (!contenedor) {
+
+        return;
+
+    }
+
+
     const alertas = [];
 
 
@@ -2545,8 +3762,9 @@ function mostrarAlertas() {
         ];
 
 
-
-    /* SALARIO MÍNIMO */
+    /*
+       SALARIO MÍNIMO
+    */
 
     if (
         data.salario <
@@ -2566,8 +3784,9 @@ function mostrarAlertas() {
     }
 
 
-
-    /* TOPE */
+    /*
+       TOPE
+    */
 
     if (
         data.salario >
@@ -2587,8 +3806,9 @@ function mostrarAlertas() {
     }
 
 
-
-    /* RENUNCIA */
+    /*
+       RENUNCIA
+    */
 
     if (
         data.causa === "renuncia" &&
@@ -2608,8 +3828,42 @@ function mostrarAlertas() {
     }
 
 
+    /*
+       AGUINALDO
+    */
 
-    /* ASUETOS */
+    if (
+        data.tipoAguinaldo === "proporcional"
+    ) {
+
+        alertas.push({
+
+            tipo:
+                "success",
+
+            texto:
+                "Aguinaldo calculado automáticamente como proporcional según las fechas ingresadas."
+
+        });
+
+    } else {
+
+        alertas.push({
+
+            tipo:
+                "success",
+
+            texto:
+                "Aguinaldo calculado automáticamente como completo según las fechas ingresadas."
+
+        });
+
+    }
+
+
+    /*
+       ASUETOS
+    */
 
     if (
         data.asuetosDias.length > 0
@@ -2628,8 +3882,30 @@ function mostrarAlertas() {
     }
 
 
+    /*
+       DÍAS DE DESCANSO SEMANAL
+    */
 
-    /* HORAS EXTRAS */
+    if (
+        data.descansoSemanalCantidad > 0
+    ) {
+
+        alertas.push({
+
+            tipo:
+                "success",
+
+            texto:
+                `Se registraron ${data.descansoSemanalCantidad} día(s) de descanso semanal laborado(s) para el cálculo.`
+
+        });
+
+    }
+
+
+    /*
+       HORAS EXTRAS
+    */
 
     if (
         data.registrosHorasExtras.length > 0
@@ -2646,7 +3922,6 @@ function mostrarAlertas() {
         });
 
     }
-
 
 
     if (
@@ -2667,7 +3942,6 @@ function mostrarAlertas() {
         return;
 
     }
-
 
 
     contenedor.innerHTML =
@@ -2691,7 +3965,6 @@ function mostrarAlertas() {
 }
 
 
-
 /* ==========================================================
    GUARDAR EN SUPABASE
 ========================================================== */
@@ -2699,22 +3972,19 @@ function mostrarAlertas() {
 async function guardarCalculoSupabase() {
 
     if (!ultimoCalculo) {
+
         return;
+
     }
 
 
     /*
-       Se deja preparado para tu tabla de Supabase.
-
-       No se ejecuta automáticamente aquí para
-       no modificar tu estructura de base de datos
-       sin conocer el nombre exacto de tu tabla.
-
-       Tu conexión a Supabase se conserva arriba.
+       Se conserva Supabase.
+       No se modifica la estructura de
+       tu base de datos.
     */
 
 }
-
 
 
 /* ==========================================================
@@ -2770,10 +4040,9 @@ function generarPDF() {
         20;
 
 
-
-    /* =====================================================
-       PÁGINA 1
-    ====================================================== */
+    /*
+       ENCABEZADO
+    */
 
     doc.setFillColor(
         azul[0],
@@ -2837,6 +4106,10 @@ function generarPDF() {
 
     y = 40;
 
+
+    /*
+       DATOS
+    */
 
     doc.setFontSize(
         11
@@ -2944,6 +4217,10 @@ function generarPDF() {
     y += 13;
 
 
+    /*
+       PRESTACIONES
+    */
+
     doc.setFont(undefined, "bold");
 
 
@@ -2968,7 +4245,7 @@ function generarPDF() {
         ],
 
         [
-            "Aguinaldo",
+            `Aguinaldo (${data.tipoAguinaldo === "completo" ? "Completo" : "Proporcional"})`,
             dinero(data.aguinaldo)
         ],
 
@@ -2980,6 +4257,11 @@ function generarPDF() {
         [
             "Días de asueto",
             dinero(data.asuetos)
+        ],
+
+        [
+            "Días de descanso semanal laborados (Arts. 175 y 176 CT)",
+            dinero(data.descansoSemanal || 0)
         ],
 
         [
@@ -3024,6 +4306,10 @@ function generarPDF() {
     y += 7;
 
 
+    /*
+       DEDUCCIONES
+    */
+
     doc.setFont(undefined, "bold");
 
 
@@ -3040,59 +4326,53 @@ function generarPDF() {
     y += 8;
 
 
-    doc.text(
-        "ISSS",
-        20,
-        y
-    );
+    const deduccionesPDF = [
+
+        [
+            "ISSS",
+            dinero(data.isss)
+        ],
+
+        [
+            "AFP",
+            dinero(data.afp)
+        ],
+
+        [
+            "ISR",
+            dinero(data.isr)
+        ],
+
+        [
+            "TOTAL DEDUCCIONES",
+            dinero(data.totalDeducciones)
+        ]
+
+    ];
 
 
-    doc.text(
-        dinero(data.isss),
-        190,
-        y,
-        {
-            align: "right"
-        }
-    );
+    deduccionesPDF.forEach(
+        fila => {
+
+            doc.text(
+                fila[0],
+                20,
+                y
+            );
 
 
-    y += 7;
+            doc.text(
+                fila[1],
+                190,
+                y,
+                {
+                    align: "right"
+                }
+            );
 
 
-    doc.text(
-        "AFP",
-        20,
-        y
-    );
+            y += 7;
 
-
-    doc.text(
-        dinero(data.afp),
-        190,
-        y,
-        {
-            align: "right"
-        }
-    );
-
-
-    y += 7;
-
-
-    doc.text(
-        "ISR",
-        20,
-        y
-    );
-
-
-    doc.text(
-        dinero(data.isr),
-        190,
-        y,
-        {
-            align: "right"
         }
     );
 
@@ -3101,26 +4381,6 @@ function generarPDF() {
 
 
     doc.setFont(undefined, "bold");
-
-
-    doc.text(
-        "TOTAL DEDUCCIONES",
-        20,
-        y
-    );
-
-
-    doc.text(
-        dinero(data.totalDeducciones),
-        190,
-        y,
-        {
-            align: "right"
-        }
-    );
-
-
-    y += 12;
 
 
     doc.setFontSize(
@@ -3186,8 +4446,9 @@ function generarPDF() {
         10;
 
 
-
-    /* ASUETOS */
+    /*
+       ASUETOS
+    */
 
     if (
         data.asuetosDias.length > 0
@@ -3212,7 +4473,9 @@ function generarPDF() {
         data.asuetosDias.forEach(
             dia => {
 
-                if (y > 270) {
+                if (
+                    y > 270
+                ) {
 
                     doc.addPage();
 
@@ -3236,8 +4499,76 @@ function generarPDF() {
     }
 
 
+    /*
+       DESCANSO SEMANAL
+    */
 
-    /* HORAS EXTRAS */
+    if (
+        data.descansoSemanalCantidad > 0
+    ) {
+
+        y += 5;
+
+
+        if (
+            y > 270
+        ) {
+
+            doc.addPage();
+
+            y = 20;
+
+        }
+
+
+        doc.setFont(undefined, "bold");
+
+
+        doc.text(
+            "Días de descanso semanal laborados:",
+            20,
+            y
+        );
+
+
+        y += 6;
+
+
+        doc.setFont(undefined, "normal");
+
+
+        doc.text(
+            `Cantidad: ${data.descansoSemanalCantidad} día(s)`,
+            25,
+            y
+        );
+
+
+        y += 5;
+
+
+        doc.text(
+            "Base: Arts. 175 y 176 del Código de Trabajo.",
+            25,
+            y
+        );
+
+
+        y += 5;
+
+
+        doc.text(
+            `Monto calculado: ${dinero(data.descansoSemanal)}`,
+            25,
+            y
+        );
+
+    }
+
+
+    /*
+       HORAS EXTRAS
+    */
 
     if (
         data.registrosHorasExtras.length > 0
@@ -3265,7 +4596,9 @@ function generarPDF() {
         data.registrosHorasExtras.forEach(
             registro => {
 
-                if (y > 270) {
+                if (
+                    y > 270
+                ) {
 
                     doc.addPage();
 
@@ -3274,14 +4607,27 @@ function generarPDF() {
                 }
 
 
+                const texto =
+                    `${registro.fecha} ${registro.inicio}-${registro.fin} — ${registro.tipo} — ${registro.horas.toFixed(2)} h — ${dinero(registro.monto)}`;
+
+
+                const lineas =
+                    doc.splitTextToSize(
+                        texto,
+                        170
+                    );
+
+
                 doc.text(
-                    `${registro.fecha} ${registro.inicio}-${registro.fin} — ${registro.tipo} — ${registro.horas.toFixed(2)} h — ${dinero(registro.monto)}`,
+                    lineas,
                     20,
                     y
                 );
 
 
-                y += 5;
+                y +=
+                    lineas.length *
+                    5;
 
             }
         );
@@ -3289,10 +4635,9 @@ function generarPDF() {
     }
 
 
-
-    /* =====================================================
+    /*
        PIE
-    ====================================================== */
+    */
 
     doc.setFontSize(
         8
@@ -3319,10 +4664,9 @@ function generarPDF() {
     );
 
 
-
-    /* =====================================================
+    /*
        PÁGINA 2
-    ====================================================== */
+    */
 
     doc.addPage();
 
@@ -3397,7 +4741,7 @@ function generarPDF() {
 
 
     const declaracion =
-        "El presente documento contiene un cálculo informativo de las prestaciones laborales correspondientes a los datos proporcionados por el usuario. Los resultados deben ser verificados conforme a la legislación laboral vigente y las circunstancias particulares de la relación laboral.";
+        "El presente documento contiene un cálculo informativo de las prestaciones laborales correspondientes a los datos proporcionados por las partes. Los resultados deben ser verificados conforme a la legislación laboral vigente y las circunstancias particulares de la relación laboral.";
 
 
     const textoDeclaracion =
@@ -3420,53 +4764,173 @@ function generarPDF() {
         20;
 
 
+    /*
+       FIRMAS
+    */
+
+    doc.setFont(undefined, "bold");
+
 
     doc.text(
-        "Trabajador(a):",
+        "TRABAJADOR(A)",
         25,
         y
     );
 
 
+    doc.text(
+        "PATRONO / REPRESENTANTE",
+        120,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 18;
+
+
     doc.line(
-        25,
-        y + 20,
+        20,
+        y,
         90,
-        y + 20
-    );
-
-
-    doc.text(
-        "Firma",
-        50,
-        y + 26
-    );
-
-
-    doc.text(
-        "Patrono / Representante:",
-        120,
         y
     );
 
 
     doc.line(
         120,
-        y + 20,
-        185,
-        y + 20
+        y,
+        190,
+        y
+    );
+
+
+    y += 6;
+
+
+    doc.text(
+        data.trabajador || "Trabajador(a)",
+        55,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    doc.text(
+        data.patrono || "Patrono / Representante",
+        155,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    y += 5;
+
+
+    doc.setFontSize(
+        8
+    );
+
+
+    doc.text(
+        `DUI: ${data.duiTrabajador || "________________"}`,
+        55,
+        y,
+        {
+            align: "center"
+        }
     );
 
 
     doc.text(
         "Firma",
-        145,
-        y + 26
+        155,
+        y,
+        {
+            align: "center"
+        }
     );
 
 
-    y += 50;
+    y += 35;
 
+
+    /*
+       TESTIGOS
+    */
+
+    doc.setFontSize(
+        9
+    );
+
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "TESTIGO / CONSTANCIA ADICIONAL",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 18;
+
+
+    doc.line(
+        20,
+        y,
+        90,
+        y
+    );
+
+
+    doc.line(
+        120,
+        y,
+        190,
+        y
+    );
+
+
+    y += 6;
+
+
+    doc.text(
+        "Nombre y firma",
+        55,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    doc.text(
+        "Nombre y firma",
+        155,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    y += 30;
+
+
+    /*
+       OBSERVACIÓN
+    */
 
     doc.setFont(undefined, "bold");
 
@@ -3485,7 +4949,7 @@ function generarPDF() {
 
 
     const observacion =
-        "Este comprobante es una herramienta de cálculo informativo y no sustituye la revisión de la autoridad laboral competente ni la documentación que pueda acreditar conceptos adicionales.";
+        "Este comprobante constituye una constancia de los datos y del cálculo realizado por el sistema. No sustituye la revisión de la autoridad laboral competente ni la documentación que pueda acreditar conceptos adicionales.";
 
 
     const textoObservacion =
@@ -3505,12 +4969,7 @@ function generarPDF() {
     y +=
         textoObservacion.length *
         5 +
-        25;
-
-
-    doc.setFontSize(
-        8
-    );
+        15;
 
 
     doc.text(
@@ -3530,13 +4989,12 @@ function generarPDF() {
     );
 
 
-
-    /* =====================================================
+    /*
        NOMBRE DEL ARCHIVO
-    ====================================================== */
+    */
 
     const nombre =
-        data.trabajador
+        (data.trabajador || "trabajador")
             .replace(
                 /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g,
                 ""
@@ -3549,11 +5007,859 @@ function generarPDF() {
 
 
     doc.save(
-        `Comprobante_Liquidacion_${nombre}.pdf`
+        `Liquidacion_${nombre}.pdf`
     );
 
 }
 
+
+/* ==========================================================
+   COMPROBANTE DE FIRMA
+========================================================== */
+
+/*
+   Esta función genera un documento
+   independiente exclusivamente para
+   dejar constancia y obtener firmas.
+*/
+
+function generarComprobanteFirma() {
+
+    if (!ultimoCalculo) {
+
+        alert(
+            "Primero debes realizar el cálculo de la liquidación."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !window.jspdf ||
+        !window.jspdf.jsPDF
+    ) {
+
+        alert(
+            "No se pudo cargar jsPDF."
+        );
+
+        return;
+
+    }
+
+
+    const {
+        jsPDF
+    } =
+        window.jspdf;
+
+
+    const data =
+        ultimoCalculo;
+
+
+    const doc =
+        new jsPDF();
+
+
+    const azul =
+        [26, 27, 79];
+
+
+    let y =
+        20;
+
+
+    /*
+       ENCABEZADO
+    */
+
+    doc.setFillColor(
+        azul[0],
+        azul[1],
+        azul[2]
+    );
+
+
+    doc.rect(
+        0,
+        0,
+        210,
+        30,
+        "F"
+    );
+
+
+    doc.setTextColor(
+        255,
+        255,
+        255
+    );
+
+
+    doc.setFontSize(
+        14
+    );
+
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "COMPROBANTE DE FIRMA",
+        105,
+        12,
+        {
+            align: "center"
+        }
+    );
+
+
+    doc.setFontSize(
+        9
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    doc.text(
+        "LIQUIDACIÓN DE PRESTACIONES LABORALES",
+        105,
+        21,
+        {
+            align: "center"
+        }
+    );
+
+
+    doc.setTextColor(
+        0,
+        0,
+        0
+    );
+
+
+    y =
+        43;
+
+
+    /*
+       DATOS
+    */
+
+    doc.setFontSize(
+        10
+    );
+
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "I. IDENTIFICACIÓN DE LAS PARTES",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 9;
+
+
+    doc.text(
+        `Trabajador(a): ${data.trabajador || ""}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `DUI del trabajador: ${data.duiTrabajador || ""}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `Cargo desempeñado: ${data.cargo || ""}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `Patrono / Empresa: ${data.patrono || ""}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `DUI del patrono / representante: ${data.duiPatrono || ""}`,
+        15,
+        y
+    );
+
+
+    y += 13;
+
+
+    /*
+       PERÍODO
+    */
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "II. PERÍODO LABORAL",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 8;
+
+
+    doc.text(
+        `Fecha de inicio: ${formatDate(data.fechaInicio)}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `Fecha de terminación: ${formatDate(data.fechaFin)}`,
+        15,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `Tiempo laborado: ${data.anos} años, ${data.meses} meses, ${data.dias} días`,
+        15,
+        y
+    );
+
+
+    y += 13;
+
+
+    /*
+       RESUMEN ECONÓMICO
+    */
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "III. RESUMEN DE LA LIQUIDACIÓN",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 9;
+
+
+    const resumen = [
+
+        [
+            "Indemnización",
+            dinero(data.indemnizacion)
+        ],
+
+        [
+            `Aguinaldo ${data.tipoAguinaldo === "completo" ? "completo" : "proporcional"}`,
+            dinero(data.aguinaldo)
+        ],
+
+        [
+            "Vacaciones + 30%",
+            dinero(data.vacaciones)
+        ],
+
+        [
+            "Días de asueto",
+            dinero(data.asuetos)
+        ],
+
+        [
+            "Días de descanso semanal laborados",
+            dinero(data.descansoSemanal || 0)
+        ],
+
+        [
+            "Horas extras / nocturnidad",
+            dinero(data.horasExtras)
+        ],
+
+        [
+            "TOTAL BRUTO",
+            dinero(data.totalBruto)
+        ],
+
+        [
+            "Total deducciones",
+            dinero(data.totalDeducciones)
+        ],
+
+        [
+            "MONTO NETO A RECIBIR",
+            dinero(data.neto)
+        ]
+
+    ];
+
+
+    resumen.forEach(
+        fila => {
+
+            doc.text(
+                fila[0],
+                20,
+                y
+            );
+
+
+            doc.text(
+                fila[1],
+                190,
+                y,
+                {
+                    align: "right"
+                }
+            );
+
+
+            y += 7;
+
+        }
+    );
+
+
+    y += 4;
+
+
+    /*
+       MONTO EN LETRAS
+    */
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "Monto neto en letras:",
+        20,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 6;
+
+
+    const montoLetras =
+        doc.splitTextToSize(
+            data.montoLetras,
+            170
+        );
+
+
+    doc.text(
+        montoLetras,
+        20,
+        y
+    );
+
+
+    y +=
+        montoLetras.length *
+        5 +
+        14;
+
+
+    /*
+       DECLARACIÓN
+    */
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "IV. DECLARACIÓN DE RECEPCIÓN",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 9;
+
+
+    const declaracion =
+        `Yo, ${data.trabajador || "________________________________"}, manifiesto que he recibido la información correspondiente a la liquidación de prestaciones laborales indicada en este documento y que los datos consignados fueron proporcionados para realizar el cálculo.`;
+
+
+    const textoDeclaracion =
+        doc.splitTextToSize(
+            declaracion,
+            175
+        );
+
+
+    doc.text(
+        textoDeclaracion,
+        15,
+        y
+    );
+
+
+    y +=
+        textoDeclaracion.length *
+        5 +
+        18;
+
+
+    /*
+       FIRMA TRABAJADOR
+    */
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "FIRMA DEL TRABAJADOR(A)",
+        15,
+        y
+    );
+
+
+    doc.text(
+        "FIRMA DEL PATRONO / REPRESENTANTE",
+        115,
+        y
+    );
+
+
+    y += 18;
+
+
+    doc.line(
+        15,
+        y,
+        90,
+        y
+    );
+
+
+    doc.line(
+        115,
+        y,
+        195,
+        y
+    );
+
+
+    y += 6;
+
+
+    doc.setFont(undefined, "normal");
+
+
+    doc.setFontSize(
+        8
+    );
+
+
+    doc.text(
+        "Firma",
+        52,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    doc.text(
+        "Firma",
+        155,
+        y,
+        {
+            align: "center"
+        }
+    );
+
+
+    y += 12;
+
+
+    doc.text(
+        `Nombre: ${data.trabajador || "________________________________"}`,
+        15,
+        y
+    );
+
+
+    doc.text(
+        `Nombre: ${data.patrono || "________________________________"}`,
+        115,
+        y
+    );
+
+
+    y += 7;
+
+
+    doc.text(
+        `DUI: ${data.duiTrabajador || "________________"}`,
+        15,
+        y
+    );
+
+
+    doc.text(
+        "DUI: __________________",
+        115,
+        y
+    );
+
+
+    y += 18;
+
+
+    /*
+       FECHA DE FIRMA
+    */
+
+    doc.setFontSize(
+        9
+    );
+
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "Fecha de firma:",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    doc.line(
+        50,
+        y + 1,
+        110,
+        y + 1
+    );
+
+
+    /*
+       OBSERVACIÓN
+    */
+
+    y += 20;
+
+
+    doc.setFont(undefined, "bold");
+
+
+    doc.text(
+        "OBSERVACIÓN",
+        15,
+        y
+    );
+
+
+    doc.setFont(undefined, "normal");
+
+
+    y += 7;
+
+
+    const observacion =
+        "Este documento deja constancia de la información utilizada para elaborar la liquidación y de la firma de las partes. La firma no sustituye los documentos legales que correspondan ni impide que las partes ejerzan los derechos que la legislación laboral les reconoce.";
+
+
+    const textoObservacion =
+        doc.splitTextToSize(
+            observacion,
+            175
+        );
+
+
+    doc.text(
+        textoObservacion,
+        15,
+        y
+    );
+
+
+    y +=
+        textoObservacion.length *
+        5 +
+        12;
+
+
+    doc.setFontSize(
+        7
+    );
+
+
+    doc.text(
+        `Documento generado: ${new Date().toLocaleString("es-SV")}`,
+        15,
+        y
+    );
+
+
+    doc.text(
+        "Calculadora de Prestaciones Laborales - El Salvador",
+        105,
+        288,
+        {
+            align: "center"
+        }
+    );
+
+
+    /*
+       ARCHIVO
+    */
+
+    const nombre =
+        (data.trabajador || "trabajador")
+            .replace(
+                /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g,
+                ""
+            )
+            .trim()
+            .replace(
+                /\s+/g,
+                "_"
+            );
+
+
+    doc.save(
+        `Comprobante_Firma_${nombre}.pdf`
+    );
+
+}
+
+
+/* ==========================================================
+   LIMPIAR FORMULARIO
+========================================================== */
+
+function limpiarFormulario() {
+
+    const formulario =
+        document.getElementById(
+            "calc-form"
+        );
+
+
+    if (!formulario) {
+
+        return;
+
+    }
+
+
+    formulario.reset();
+
+
+    /*
+       Limpiar resultados.
+    */
+
+    const resultCard =
+        document.getElementById(
+            "result-card"
+        );
+
+
+    if (resultCard) {
+
+        resultCard.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    const resultDetails =
+        document.getElementById(
+            "result-details"
+        );
+
+
+    if (resultDetails) {
+
+        resultDetails.innerHTML = "";
+
+    }
+
+
+    const alertas =
+        document.getElementById(
+            "alertas"
+        );
+
+
+    if (alertas) {
+
+        alertas.innerHTML = "";
+
+    }
+
+
+    /*
+       Limpiar horas extras.
+    */
+
+    const extras =
+        document.getElementById(
+            "extras-container"
+        );
+
+
+    if (extras) {
+
+        extras.innerHTML = "";
+
+    }
+
+
+    contadorHorasExtras = 0;
+
+
+    ultimoCalculo = null;
+
+
+    /*
+       Ocultar cajas condicionales.
+    */
+
+    const cajas = [
+
+        "renuncia-box",
+
+        "asuetos-box",
+
+        "descanso-semanal-box"
+
+    ];
+
+
+    cajas.forEach(
+        id => {
+
+            const elemento =
+                document.getElementById(
+                    id
+                );
+
+
+            if (elemento) {
+
+                elemento.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+    );
+
+
+    /*
+       Actualizar valores iniciales.
+    */
+
+    actualizarTope();
+
+
+    toggleRenunciaBox();
+
+
+    toggleVacacionesFechas();
+
+
+    toggleAsuetos();
+
+
+    toggleHorasExtras();
+
+
+    toggleDescansoSemanal();
+
+
+    /*
+       Eliminar indicador automático
+       de aguinaldo si se creó dinámicamente.
+    */
+
+    const indicador =
+        document.getElementById(
+            "aguinaldo-automatico"
+        );
+
+
+    if (indicador) {
+
+        indicador.remove();
+
+    }
+
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
+}
 
 
 /* ==========================================================
@@ -3564,57 +5870,313 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-
         actualizarTope();
-
 
         toggleRenunciaBox();
 
-
         toggleVacacionesFechas();
-
 
         toggleAsuetos();
 
-
         toggleHorasExtras();
 
+        toggleDescansoSemanal();
 
 
-        /* SALARIO */
+        /*
+           SALARIO
+        */
 
-        document
-            .getElementById(
+        const salario =
+            document.getElementById(
                 "salario"
-            )
-            .addEventListener(
-                "input",
-                actualizarTope
             );
 
 
-        /* SECTOR */
+        if (salario) {
 
-        document
-            .getElementById(
+            salario.addEventListener(
+                "input",
+                function () {
+
+                    actualizarTope();
+
+                    actualizarDescansoSemanalPreview();
+
+                }
+            );
+
+        }
+
+
+        /*
+           SECTOR
+        */
+
+        const sector =
+            document.getElementById(
                 "sector"
-            )
-            .addEventListener(
+            );
+
+
+        if (sector) {
+
+            sector.addEventListener(
                 "change",
                 actualizarTope
             );
 
+        }
 
-        /* CARGO */
 
-        document
-            .getElementById(
+        /*
+           CARGO
+        */
+
+        const cargoTipo =
+            document.getElementById(
                 "cargo-tipo"
-            )
-            .addEventListener(
+            );
+
+
+        if (cargoTipo) {
+
+            cargoTipo.addEventListener(
                 "change",
                 updatePreavisoText
             );
 
+        }
+
+
+        /*
+           FECHA DE INICIO
+        */
+
+        const fechaInicio =
+            document.getElementById(
+                "fecha-inicio"
+            );
+
+
+        if (fechaInicio) {
+
+            fechaInicio.addEventListener(
+                "change",
+                function () {
+
+                    calcularTiempoAntiguedad();
+
+                    determinarTipoAguinaldo();
+
+                }
+            );
+
+        }
+
+
+        /*
+           FECHA DE FINALIZACIÓN
+        */
+
+        const fechaFin =
+            document.getElementById(
+                "fecha-fin"
+            );
+
+
+        if (fechaFin) {
+
+            fechaFin.addEventListener(
+                "change",
+                function () {
+
+                    calcularTiempoAntiguedad();
+
+                    determinarTipoAguinaldo();
+
+                }
+            );
+
+        }
+
+
+        /*
+           CAUSA
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="causa"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        toggleRenunciaBox
+                    );
+
+                }
+            );
+
+
+        /*
+           PREAVISO
+        */
+
+        const preaviso =
+            document.getElementById(
+                "preaviso"
+            );
+
+
+        if (preaviso) {
+
+            preaviso.addEventListener(
+                "change",
+                verificarElegibilidadRenuncia
+            );
+
+        }
+
+
+        /*
+           AGUINALDO
+           Si existen radios manuales,
+           los dejamos sincronizados.
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="aguinaldo_tipo"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        function () {
+
+                            /*
+                               El sistema prioriza
+                               la determinación automática
+                               según las fechas.
+                            */
+
+                            determinarTipoAguinaldo();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /*
+           VACACIONES
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="vacaciones_tipo"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        toggleVacacionesFechas
+                    );
+
+                }
+            );
+
+
+        /*
+           ASUETOS
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="laboro_asueto"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        toggleAsuetos
+                    );
+
+                }
+            );
+
+
+        /*
+           DÍAS DE DESCANSO SEMANAL
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="laboro_descanso"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        toggleDescansoSemanal
+                    );
+
+                }
+            );
+
+
+        const diasDescanso =
+            document.getElementById(
+                "dias-descanso-semanal"
+            );
+
+
+        if (diasDescanso) {
+
+            diasDescanso.addEventListener(
+                "input",
+                actualizarDescansoSemanalPreview
+            );
+
+        }
+
+
+        /*
+           HORAS EXTRAS
+        */
+
+        document
+            .querySelectorAll(
+                'input[name="tiene_extras"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        toggleHorasExtras
+                    );
+
+                }
+            );
+
+
+        /*
+           Primera comprobación
+           de aguinaldo.
+        */
+
+        determinarTipoAguinaldo();
+
     }
 );
+
+
