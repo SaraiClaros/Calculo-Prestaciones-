@@ -88,7 +88,97 @@ function obtenerFecha(fecha) {
 
 }
 
+function configurarFechas() {
 
+    const fechaInicio =
+        document.getElementById("fecha-inicio");
+
+    const fechaFin =
+        document.getElementById("fecha-fin");
+
+    // Fecha máxima para el inicio:
+    // 10 días antes de hoy
+    const hoy = new Date();
+
+    hoy.setDate(
+        hoy.getDate() - 10
+    );
+
+    const maxFechaInicio =
+        hoy.toISOString().split("T")[0];
+
+    fechaInicio.setAttribute(
+        "max",
+        maxFechaInicio
+    );
+
+
+    // Al inicio, la fecha final está deshabilitada
+    fechaFin.disabled = true;
+
+
+    // Cuando se seleccione una fecha de inicio
+    fechaInicio.addEventListener(
+        "change",
+        function () {
+
+            if (fechaInicio.value) {
+
+                // La fecha final debe ser posterior
+                // a la fecha de inicio
+                const fecha = new Date(
+                    fechaInicio.value + "T00:00:00"
+                );
+
+                fecha.setDate(
+                    fecha.getDate() + 1
+                );
+
+                const fechaMinimaFin =
+                    fecha.toISOString().split("T")[0];
+
+                fechaFin.disabled = false;
+
+                fechaFin.setAttribute(
+                    "min",
+                    fechaMinimaFin
+                );
+
+                // Si ya había una fecha final
+                // y ahora es inválida, se elimina
+                if (
+                    fechaFin.value &&
+                    fechaFin.value < fechaMinimaFin
+                ) {
+
+                    fechaFin.value = "";
+
+                }
+
+            } else {
+
+                // Si se borra la fecha de inicio,
+                // vuelve a bloquearse la fecha final
+                fechaFin.value = "";
+
+                fechaFin.disabled = true;
+
+                fechaFin.removeAttribute(
+                    "min"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    configurarFechas
+);
 /* ==========================================================
    ANTIGÜEDAD
 ========================================================== */
@@ -2006,10 +2096,8 @@ function calcularIndemnizacion(
             "preaviso"
         ).value;
 
-
-    if (
-        anos < 2 ||
-        preaviso !== "si"
+if (
+        tiempo < 2
     ) {
 
         return {
@@ -2125,113 +2213,113 @@ function calcularAguinaldo(
     fechaFin
 ) {
 
-    const fecha =
-        obtenerFecha(
-            fechaFin
-        );
-
+    const fecha = obtenerFecha(fechaFin);
 
     if (!fecha) {
-
         return 0;
-
     }
 
+    /*
+       Días de aguinaldo según antigüedad:
 
-    const anos =
-        Math.floor(
-            tiempo
-        );
+       1 año y menos de 3 años = 15 días
+       3 años y menos de 10 años = 19 días
+       10 años o más = 21 días
+    */
 
+    const anos = Math.floor(tiempo);
 
     let diasBase;
 
-
-    if (
-        anos >= 10
-    ) {
-
+    if (anos >= 10) {
         diasBase = 21;
-
-    } else if (
-        anos >= 3
-    ) {
-
+    } else if (anos >= 3) {
         diasBase = 19;
-
     } else {
-
         diasBase = 15;
-
     }
 
-
-    const salarioDiario =
-        salario / 30;
-
+    const salarioDiario = salario / 30;
 
     /*
-       Obtener el tipo automático.
+       Obtener la modalidad seleccionada.
     */
 
-    let tipo =
-        null;
+    const radio = document.querySelector(
+        'input[name="aguinaldo_tipo"]:checked'
+    );
 
-
-    const radio =
-        document.querySelector(
-            'input[name="aguinaldo_tipo"]:checked'
-        );
-
-
-    if (radio) {
-
-        tipo =
-            radio.value;
-
-    }
-
+    let tipo = radio ? radio.value : null;
 
     /*
-       Si no existe radio o no está seleccionado,
-       determinarlo automáticamente.
+       Si no se seleccionó una modalidad,
+       determinarla automáticamente.
     */
 
-    if (
-        !tipo
-    ) {
+    if (!tipo) {
+
+        const fechaInicioInput =
+            document.getElementById("fecha-inicio").value;
 
         const fechaInicio =
-            document.getElementById(
-                "fecha-inicio"
-            ).value;
+            obtenerFecha(fechaInicioInput);
 
+        if (!fechaInicio) {
+            return 0;
+        }
 
-        const inicio =
-            obtenerFecha(
-                fechaInicio
-            );
+        /*
+           El período de referencia del aguinaldo
+           comprende del 12 de diciembre al 11 de diciembre
+           del año siguiente.
+        */
 
+        let inicioPeriodo;
+        let finPeriodo;
 
-        const inicioPeriodo =
-            new Date(
-                fecha.getFullYear() - 1,
-                11,
-                12
-            );
+        if (
+            fecha.getMonth() > 11 ||
+            (
+                fecha.getMonth() === 11 &&
+                fecha.getDate() >= 12
+            )
+        ) {
 
-
-        const fechaReferencia =
-            new Date(
+            inicioPeriodo = new Date(
                 fecha.getFullYear(),
                 11,
                 12
             );
 
+            finPeriodo = new Date(
+                fecha.getFullYear() + 1,
+                11,
+                11
+            );
+
+        } else {
+
+            inicioPeriodo = new Date(
+                fecha.getFullYear() - 1,
+                11,
+                12
+            );
+
+            finPeriodo = new Date(
+                fecha.getFullYear(),
+                11,
+                11
+            );
+        }
+
+        /*
+           Si ya completó el período correspondiente,
+           se considera aguinaldo completo.
+        */
 
         if (
-            inicio <= inicioPeriodo &&
-            fecha >= fechaReferencia
+            fechaInicio <= inicioPeriodo &&
+            fecha >= finPeriodo
         ) {
 
             tipo = "completo";
@@ -2239,95 +2327,100 @@ function calcularAguinaldo(
         } else {
 
             tipo = "proporcional";
-
         }
-
     }
 
-
     /*
-       Aguinaldo proporcional.
+       AGUINALDO COMPLETO
     */
 
-    if (
-        tipo === "proporcional" ||
-        tiempo < 1
-    ) {
-
-        /*
-           El período inicia el 12 de diciembre
-           del año anterior.
-        */
-
-        let inicioPeriodo =
-            new Date(
-                fecha.getFullYear() - 1,
-                11,
-                12
-            );
-
-
-        /*
-           Si la fecha de terminación es anterior
-           al 12 de diciembre, se usa el período
-           anterior correspondiente.
-        */
-
-        if (
-            fecha <
-            new Date(
-                fecha.getFullYear(),
-                11,
-                12
-            )
-        ) {
-
-            inicioPeriodo =
-                new Date(
-                    fecha.getFullYear() - 2,
-                    11,
-                    12
-                );
-
-        }
-
-
-        const dias =
-            Math.min(
-                365,
-                Math.max(
-                    0,
-                    Math.ceil(
-                        (
-                            fecha -
-                            inicioPeriodo
-                        ) /
-                        86400000
-                    )
-                )
-            );
-
+    if (tipo === "completo") {
 
         return redondear(
-            salarioDiario *
-            diasBase *
-            dias /
-            365
+            salarioDiario * diasBase
         );
-
     }
 
+    /*
+       AGUINALDO PROPORCIONAL
+       
+       Para una terminación antes del 12 de diciembre,
+       el período inicia el 12 de diciembre anterior.
+    */
+
+    let inicioPeriodo;
+
+    if (
+        fecha.getMonth() < 11 ||
+        (
+            fecha.getMonth() === 11 &&
+            fecha.getDate() < 12
+        )
+    ) {
+
+        inicioPeriodo = new Date(
+            fecha.getFullYear() - 1,
+            11,
+            12
+        );
+
+    } else {
+
+        inicioPeriodo = new Date(
+            fecha.getFullYear(),
+            11,
+            12
+        );
+    }
 
     /*
-       Aguinaldo completo.
+       Si el trabajador ingresó después del inicio
+       del período, se toma como inicio su fecha de ingreso.
+    */
+
+    const fechaInicioInput =
+        document.getElementById("fecha-inicio").value;
+
+    const fechaInicio =
+        obtenerFecha(fechaInicioInput);
+
+    if (
+        fechaInicio &&
+        fechaInicio > inicioPeriodo
+    ) {
+
+        inicioPeriodo = fechaInicio;
+    }
+
+    /*
+       Días laborados dentro del período de aguinaldo.
+    */
+
+    const dias = Math.max(
+        0,
+        Math.floor(
+            (
+                fecha -
+                inicioPeriodo
+            ) / 86400000
+        ) + 1
+    );
+
+    /*
+       Aguinaldo proporcional:
+       
+       salario diario × días de aguinaldo
+       × días laborados / 365
     */
 
     return redondear(
         salarioDiario *
-        diasBase
+        diasBase *
+        dias /
+        365
     );
-
 }
+
 
 
 /* ==========================================================
@@ -3299,11 +3392,6 @@ function calculateLiquidacion(
                 "nombre-trabajador"
             ).value,
 
-        duiTrabajador:
-            document.getElementById(
-                "dui-trabajador"
-            ).value,
-
         cargo:
             document.getElementById(
                 "cargo-desempenado"
@@ -3314,10 +3402,7 @@ function calculateLiquidacion(
                 "nombre-patrono"
             ).value,
 
-        duiPatrono:
-            document.getElementById(
-                "dui-patrono"
-            ).value,
+    
 
         salario,
 
@@ -4147,14 +4232,6 @@ function generarPDF() {
     y += 6;
 
 
-    doc.text(
-        `DUI: ${data.duiTrabajador}`,
-        15,
-        y
-    );
-
-
-    y += 6;
 
 
     doc.text(
@@ -6178,5 +6255,4 @@ document.addEventListener(
 
     }
 );
-
 
